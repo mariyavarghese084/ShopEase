@@ -5,6 +5,7 @@ import '../../../core/constants/app_constants.dart';
 import '../../../core/routes/app_routes.dart';
 import '../admin_scaffold.dart';
 import 'customer_details_dialog.dart';
+import '../../../widgets/luxury_ui_components.dart';
 
 /// Full administrative customer directory and lifetime value management screen.
 class AdminCustomersView extends StatefulWidget {
@@ -131,25 +132,10 @@ class _AdminCustomersViewState extends State<AdminCustomersView> {
           children: [
             Align(
               alignment: Alignment.center,
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 120),
-                child: OutlinedButton.icon(
-                  onPressed: controller.isLoading ? null : () => controller.loadCustomers(),
-                  icon: controller.isLoading
-                      ? const SizedBox(
-                          width: 14,
-                          height: 14,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.luxuryWine),
-                        )
-                      : const Icon(Icons.refresh_rounded, size: 16),
-                  label: const Text('Refresh'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.luxuryWine,
-                    side: const BorderSide(color: AppColors.luxuryWine),
-                    minimumSize: const Size(0, 0),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  ),
-                ),
+              child: LuxuryActionButton.refresh(
+                onPressed: controller.isLoading ? null : () => controller.loadCustomers(),
+                isLoading: controller.isLoading,
+                label: 'Refresh',
               ),
             ),
           ],
@@ -531,17 +517,8 @@ class _AdminCustomersViewState extends State<AdminCustomersView> {
                     SizedBox(
                       width: 120,
                       child: Center(
-                        child: OutlinedButton.icon(
+                        child: LuxuryActionButton.customerDetails(
                           onPressed: () => CustomerDetailsDialog.show(context, customer),
-                          icon: const Icon(Icons.visibility_outlined, size: 14),
-                          label: const Text('Details', style: TextStyle(fontSize: 12)),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: AppColors.luxuryWine,
-                            side: const BorderSide(color: AppColors.luxuryWine),
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                            minimumSize: const Size(0, 0),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                          ),
                         ),
                       ),
                     ),
@@ -679,17 +656,9 @@ class _AdminCustomersViewState extends State<AdminCustomersView> {
               const SizedBox(height: 12),
               SizedBox(
                 width: double.infinity,
-                child: OutlinedButton.icon(
+                child: LuxuryActionButton.customerDetails(
+                  label: 'View Customer Details & History',
                   onPressed: () => CustomerDetailsDialog.show(context, customer),
-                  icon: const Icon(Icons.visibility_outlined, size: 16),
-                  label: const Text('View Customer Details & History'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.luxuryWine,
-                    side: const BorderSide(color: AppColors.luxuryWine),
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                    minimumSize: const Size(0, 40),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  ),
                 ),
               ),
             ],

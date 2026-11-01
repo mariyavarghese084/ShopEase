@@ -6,6 +6,7 @@ import '../../../core/routes/app_routes.dart';
 import '../../../models/order_model.dart';
 import '../admin_scaffold.dart';
 import 'order_details_dialog.dart';
+import '../../../widgets/luxury_ui_components.dart';
 
 /// Working Stage 3 Admin Orders Management & Fulfillment Center.
 ///
@@ -132,32 +133,12 @@ class _AdminOrdersViewState extends State<AdminOrdersView> {
 
         final refreshBtn = Align(
           alignment: Alignment.center,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 160),
-            child: OutlinedButton.icon(
-              onPressed: controller.isLoading
-                  ? null
-                  : () => controller.loadOrders(),
-              icon: controller.isLoading
-                  ? const SizedBox(
-                      width: 14,
-                      height: 14,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: AppColors.luxuryWine,
-                      ),
-                    )
-                  : const Icon(Icons.refresh_rounded, size: 16),
-              label: const Text('Refresh Orders'),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.luxuryWine,
-                side: const BorderSide(color: AppColors.luxuryWine),
-                minimumSize: const Size(0, 0),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-            ),
+          child: LuxuryActionButton.refresh(
+            onPressed: controller.isLoading
+                ? null
+                : () => controller.loadOrders(),
+            isLoading: controller.isLoading,
+            label: 'Refresh Orders',
           ),
         );
 
@@ -746,33 +727,9 @@ class _AdminOrdersViewState extends State<AdminOrdersView> {
                     DataCell(
                       Align(
                         alignment: Alignment.center,
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 120),
-                          child: ElevatedButton.icon(
-                            onPressed: () =>
-                                OrderDetailsDialog.show(context, order),
-                            icon: const Icon(
-                              Icons.visibility_outlined,
-                              size: 14,
-                            ),
-                            label: const Text('Inspect'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.luxuryWine,
-                              foregroundColor: AppColors.white,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 6,
-                              ),
-                              minimumSize: const Size(0, 0),
-                              textStyle: const TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
-                          ),
+                        child: LuxuryActionButton.inspect(
+                          onPressed: () =>
+                              OrderDetailsDialog.show(context, order),
                         ),
                       ),
                     ),
@@ -899,20 +856,9 @@ class _AdminOrdersViewState extends State<AdminOrdersView> {
               const SizedBox(height: AppSpacing.sm),
               SizedBox(
                 width: double.infinity,
-                child: ElevatedButton.icon(
+                child: LuxuryActionButton.inspect(
+                  label: 'View Order Details & Fulfillment',
                   onPressed: () => OrderDetailsDialog.show(context, order),
-                  icon: const Icon(Icons.receipt_long_outlined, size: 16),
-                  label: const FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Text('View Order Details & Fulfillment'),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.luxuryWine,
-                    foregroundColor: AppColors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
                 ),
               ),
             ],

@@ -643,6 +643,20 @@ class _CheckoutViewState extends State<CheckoutView> {
       return;
     }
 
+    final outOfStockItems =
+        cart.items.where((i) => !i.product.isInStock).toList();
+    if (outOfStockItems.isNotEmpty) {
+      final names = outOfStockItems.map((i) => i.product.name).join(', ');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Cannot place order: "$names" is out of stock.'),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
     setState(() => _isPlacingOrder = true);
 
     try {

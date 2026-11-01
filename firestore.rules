@@ -99,7 +99,7 @@ service cloud.firestore {
       allow create: if isAuthenticated() && (
         isAdmin() ||
         (request.resource.data.customerUid == request.auth.uid) ||
-        (request.resource.data.action in ['customer_order_confirmation', 'admin_new_order_alert'])
+        (request.resource.data.action in ['customer_order_confirmation', 'admin_new_order_alert', 'customer_order_status_update'])
       );
       allow read, update, delete: if isAdmin();
     }

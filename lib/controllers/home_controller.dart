@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../models/category_model.dart';
 import '../models/product_model.dart';
@@ -12,6 +13,7 @@ import '../services/firebase_service.dart';
 class HomeController extends ChangeNotifier {
   final ProductRepository _productRepository;
   final FavoritesRepository? _favoritesRepository;
+  StreamSubscription<List<ProductModel>>? _productsSubscription;
 
   HomeController({
     ProductRepository? productRepository,
@@ -34,7 +36,7 @@ class HomeController extends ChangeNotifier {
   final Set<String> _favoriteIds = {};
   String? _currentUserId;
   int _favSyncSession = 0;
-  int _cartBadgeCount = 3; // Placeholder cart item count for header badge
+  int _cartBadgeCount = 0;
 
   // ── Getters ────────────────────────────────────────────────────────────────
   List<CategoryModel> get categories => List.unmodifiable(_categories);
@@ -95,6 +97,7 @@ class HomeController extends ChangeNotifier {
       _featuredProducts = results[1] as List<ProductModel>;
       _allProducts = results[2] as List<ProductModel>;
       _displayedProducts = results[3] as List<ProductModel>;
+      _listenToProductUpdates();
     } catch (e) {
       _errorMessage = 'Failed to load store data. Please try again.';
     } finally {
@@ -103,45 +106,56 @@ class HomeController extends ChangeNotifier {
     }
   }
 
+  void _listenToProductUpdates() {
+    _productsSubscription?.cancel();
+    _productsSubscription = _productRepository.watchProducts().listen(
+      (products) {
+        _allProducts = products;
+        _featuredProducts =
+            _allProducts.where((p) => p.isFeatured && p.isAvailable).toList();
+        _applyFilters();
+        notifyListeners();
+      },
+      onError: (e) {
+        debugPrint('[ShopEase:HomeController] Error in product stream: $e');
+      },
+    );
+  }
+
+  void _applyFilters() {
+    var list = List<ProductModel>.from(_allProducts);
+    if (_selectedCategoryId.isNotEmpty && _selectedCategoryId != 'all') {
+      list = list.where((p) => p.categoryId == _selectedCategoryId).toList();
+    }
+    if (_searchQuery.trim().isNotEmpty) {
+      final query = _searchQuery.toLowerCase().trim();
+      list = list
+          .where((p) =>
+              p.name.toLowerCase().contains(query) ||
+              p.brand.toLowerCase().contains(query) ||
+              p.categoryName.toLowerCase().contains(query) ||
+              p.description.toLowerCase().contains(query) ||
+              p.subtitle.toLowerCase().contains(query))
+          .toList();
+    }
+    _displayedProducts = list;
+  }
+
   /// Filters products by category.
   Future<void> selectCategory(String categoryId) async {
     if (_selectedCategoryId == categoryId && _errorMessage == null) return;
 
     _selectedCategoryId = categoryId;
-    _isLoading = true;
+    _applyFilters();
     notifyListeners();
-
-    try {
-      _displayedProducts = await _productRepository.getProducts(
-        categoryId: _selectedCategoryId,
-        searchQuery: _searchQuery.trim(),
-      );
-    } catch (e) {
-      _errorMessage = 'Failed to filter products.';
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
   }
 
   /// Updates search query and filters products in real-time.
   Future<void> setSearchQuery(String query) async {
     if (_searchQuery == query) return;
     _searchQuery = query;
-    _isLoading = true;
+    _applyFilters();
     notifyListeners();
-
-    try {
-      _displayedProducts = await _productRepository.getProducts(
-        categoryId: _selectedCategoryId,
-        searchQuery: _searchQuery.trim(),
-      );
-    } catch (e) {
-      _errorMessage = 'Search failed.';
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
   }
 
   /// Clears active search.
@@ -231,4 +245,10 @@ class HomeController extends ChangeNotifier {
 
   /// Refreshes all data.
   Future<void> refresh() => loadHomeData();
+
+  @override
+  void dispose() {
+    _productsSubscription?.cancel();
+    super.dispose();
+  }
 }

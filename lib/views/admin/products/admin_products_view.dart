@@ -7,6 +7,7 @@ import '../../../core/routes/app_routes.dart';
 import '../../../models/product_model.dart';
 import '../admin_scaffold.dart';
 import 'product_form_dialog.dart';
+import '../../../widgets/luxury_ui_components.dart';
 
 class AdminProductsView extends StatefulWidget {
   const AdminProductsView({super.key});
@@ -114,26 +115,9 @@ class _AdminProductsViewState extends State<AdminProductsView> {
         ),
         Align(
           alignment: Alignment.center,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 160),
-            child: ElevatedButton.icon(
-              onPressed: () => _openAddProductDialog(context),
-              icon: const Icon(Icons.add_rounded, size: 20),
-              label: Text(isWide ? 'Add Product' : 'Add'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.luxuryWine,
-                foregroundColor: AppColors.white,
-                padding: EdgeInsets.symmetric(
-                  horizontal: isWide ? 20 : 14,
-                  vertical: 14,
-                ),
-                minimumSize: const Size(0, 0),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                elevation: 2,
-              ),
-            ),
+          child: LuxuryActionButton.addProduct(
+            onPressed: () => _openAddProductDialog(context),
+            isWide: isWide,
           ),
         ),
       ],
@@ -172,11 +156,16 @@ class _AdminProductsViewState extends State<AdminProductsView> {
     if (isWide) {
       return Row(
         children: cards
+            .asMap()
+            .entries
             .map(
-              (c) => Expanded(
+              (e) => Expanded(
                 child: Padding(
                   padding: const EdgeInsets.only(right: 12),
-                  child: c,
+                  child: StaggeredSlideFade(
+                    index: e.key,
+                    child: e.value,
+                  ),
                 ),
               ),
             )
@@ -189,12 +178,17 @@ class _AdminProductsViewState extends State<AdminProductsView> {
       physics: const BouncingScrollPhysics(),
       child: Row(
         children: cards
+            .asMap()
+            .entries
             .map(
-              (c) => SizedBox(
+              (e) => SizedBox(
                 width: 170,
                 child: Padding(
                   padding: const EdgeInsets.only(right: 12),
-                  child: c,
+                  child: StaggeredSlideFade(
+                    index: e.key,
+                    child: e.value,
+                  ),
                 ),
               ),
             )
@@ -209,20 +203,9 @@ class _AdminProductsViewState extends State<AdminProductsView> {
     required IconData icon,
     required Color color,
   }) {
-    return Container(
+    return HoverElevatedCard(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.cardBackground,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.divider),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.mainText.withAlpha(8),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
+      borderRadius: 16,
       child: Row(
         children: [
           Container(
@@ -1081,14 +1064,8 @@ class _AdminProductsViewState extends State<AdminProductsView> {
                   child: const Text('Reset Filters'),
                 ),
                 const SizedBox(width: 12),
-                ElevatedButton.icon(
+                LuxuryActionButton.addProduct(
                   onPressed: () => _openAddProductDialog(context),
-                  icon: const Icon(Icons.add_rounded, size: 18),
-                  label: const Text('Add Product'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.luxuryWine,
-                    foregroundColor: AppColors.white,
-                  ),
                 ),
               ],
             ),

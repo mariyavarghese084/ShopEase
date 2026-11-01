@@ -94,8 +94,39 @@ class ProductCard extends StatelessWidget {
                       ),
                     ),
 
-                    // Tag Badge (Bestseller / Sale / New / Limited)
-                    if (product.tag != null)
+                    // Stock or Tag Badge
+                    if (!product.isInStock)
+                      Positioned(
+                        top: 10,
+                        left: 10,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF6B585B),
+                            borderRadius: BorderRadius.circular(6),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withAlpha(40),
+                                blurRadius: 4,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: const Text(
+                            'Out of Stock',
+                            style: TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.white,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ),
+                      )
+                    else if (product.tag != null)
                       Positioned(
                         top: 10,
                         left: 10,
@@ -255,19 +286,25 @@ class ProductCard extends StatelessWidget {
 
                           // Circular Quick Add to cart button
                           Material(
-                            color: AppColors.luxuryWine,
+                            color: product.isInStock
+                                ? AppColors.luxuryWine
+                                : AppColors.divider.withAlpha(160),
                             shape: const CircleBorder(),
-                            elevation: 1,
+                            elevation: product.isInStock ? 1 : 0,
                             shadowColor: AppColors.luxuryWine.withAlpha(80),
                             child: InkWell(
-                              onTap: onAddToCart,
+                              onTap: product.isInStock ? onAddToCart : null,
                               customBorder: const CircleBorder(),
-                              child: const Padding(
-                                padding: EdgeInsets.all(6),
+                              child: Padding(
+                                padding: const EdgeInsets.all(6),
                                 child: Icon(
-                                  Icons.shopping_bag_outlined,
+                                  product.isInStock
+                                      ? Icons.shopping_bag_outlined
+                                      : Icons.remove_shopping_cart_outlined,
                                   size: 14,
-                                  color: AppColors.white,
+                                  color: product.isInStock
+                                      ? AppColors.white
+                                      : AppColors.secondaryText,
                                 ),
                               ),
                             ),

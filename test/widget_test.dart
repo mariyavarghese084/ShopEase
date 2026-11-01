@@ -1839,6 +1839,16 @@ class _InMemoryOrderRepository implements OrderRepository {
       }
     }
   }
+
+  @override
+  Future<String?> findCustomerUidForOrder(String orderId) async {
+    for (final entry in _userOrders.entries) {
+      if (entry.value.any((o) => o.id == orderId)) {
+        return entry.key;
+      }
+    }
+    return null;
+  }
 }
 
 /// Helper test implementation of [AuthController] to test role states deterministically.

@@ -215,7 +215,23 @@ class AdminOrderController extends ChangeNotifier {
     OrderProgressStatus newStatus, {
     String? note,
   }) async {
-    // 1. Workflow validation
+    // 0. Do not create a notification or write to DB if the status is unchanged
+    if (order.status == newStatus) {
+      debugPrint(
+        '[ShopEase:Order] Status unchanged (${order.status.name}), skipping notification and update.',
+      );
+      return true;
+    }
+
+    // 1. Security: Only authorized administrators can update order status
+    final isAdmin = _authController?.isAdmin ?? false;
+    if (_authController != null && !isAdmin) {
+      _errorMessage = 'Unauthorized: Only administrators can update order status.';
+      notifyListeners();
+      return false;
+    }
+
+    // 2. Workflow transition validation
     if (!OrderModel.canTransition(order.status, newStatus)) {
       _errorMessage =
           'Cannot transition order from "${order.status.label}" to "${newStatus.label}".';
@@ -231,10 +247,20 @@ class AdminOrderController extends ChangeNotifier {
       final adminUid = _authController?.customerProfile?.uid ??
           _authController?.currentUser?.uid ??
           'admin';
-      final uid = order.customerId ?? '';
 
+      // 3. Identify the order's actual customer UID
+      var customerUid =
+          (order.customerId != null && order.customerId!.isNotEmpty)
+              ? order.customerId!
+              : '';
+      if (customerUid.isEmpty) {
+        customerUid =
+            (await _orderRepository.findCustomerUidForOrder(order.id)) ?? '';
+      }
+
+      // 4. Save the new status to Firestore (if this fails, it jumps to catch without notifying)
       await _orderRepository.updateOrderStatus(
-        uid,
+        customerUid,
         order.id,
         newStatus,
         adminId: adminUid,
@@ -250,6 +276,7 @@ class AdminOrderController extends ChangeNotifier {
 
       final updated = order.copyWith(
         status: newStatus,
+        customerId: customerUid.isNotEmpty ? customerUid : order.customerId,
         updatedAt: DateTime.now(),
         updatedBy: adminUid,
         statusHistory: List<OrderStatusHistoryEntry>.from(order.statusHistory)
@@ -270,30 +297,35 @@ class AdminOrderController extends ChangeNotifier {
 
       debugPrint(
         '[ShopEase:Order] Order status transitioned: id=${order.id}, '
-        'oldStatus=${order.status.name}, newStatus=${newStatus.name}, updatedBy=$adminUid',
+        'oldStatus=${order.status.name}, newStatus=${newStatus.name}, updatedBy=$adminUid, customerUid=$customerUid',
       );
 
-      // Notify customer of fulfillment status update
-      if (uid.isNotEmpty) {
+      // 5. Automatically create in-app notification & push notification request after successful update
+      if (customerUid.isNotEmpty) {
+        final title =
+            BackendPushDispatchService.getOrderStatusTitle(order, newStatus);
+        final body = BackendPushDispatchService.getOrderStatusBody(newStatus);
+
         final statusNotif = AppNotificationModel(
-          id: 'notif_status_${order.id}_${newStatus.name}_${DateTime.now().millisecondsSinceEpoch}',
-          title: 'Order #${order.id} Updated',
-          body: 'Your order fulfillment status is now: ${newStatus.label}.',
+          id:
+              'notif_status_${order.id}_${newStatus.name}_${DateTime.now().millisecondsSinceEpoch}',
+          title: title,
+          body: body,
           type: 'order',
           receivedAt: DateTime.now(),
           targetRoute: '/customer/orders',
           targetId: order.id,
         );
         _notificationRepository?.saveInAppNotification(
-          uid: uid,
+          uid: customerUid,
           notification: statusNotif,
         );
         debugPrint(
           '[ShopEase:Notification] In-app notification created: id=${statusNotif.id}, '
-          'recipient=$uid, title="${statusNotif.title}", newStatus=${newStatus.name}',
+          'recipient=$customerUid, title="${statusNotif.title}", newStatus=${newStatus.name}',
         );
         _pushDispatchService?.dispatchCustomerOrderStatusUpdate(
-          customerUid: uid,
+          customerUid: customerUid,
           order: updated,
           newStatus: newStatus,
         );

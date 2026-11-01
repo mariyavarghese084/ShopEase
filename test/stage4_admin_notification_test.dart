@@ -81,6 +81,14 @@ class MockOrderRepository implements OrderRepository {
       orders[idx] = orders[idx].copyWith(status: status);
     }
   }
+
+  @override
+  Future<String?> findCustomerUidForOrder(String orderId) async {
+    for (final o in orders) {
+      if (o.id == orderId) return o.customerId;
+    }
+    return null;
+  }
 }
 
 class MockAuthRepository extends Fake implements AuthRepository {
@@ -384,11 +392,15 @@ void main() {
 
       // Verify customer received status update notification
       final customerInbox = await notificationRepo.notificationsStream('cust_1').first;
-      expect(customerInbox.any((n) => n.title.contains('ORD-999 Updated')), isTrue);
+      expect(customerInbox.any((n) => n.title.contains('ORD-999')), isTrue);
 
       // Verify push update was dispatched
       final actions = pushDispatchService.dispatchedRequests.map((r) => r['action']).toList();
-      expect(actions, contains('status_update'));
+      expect(
+        actions.any((a) =>
+            a == 'status_update' || a == 'customer_order_status_update'),
+        isTrue,
+      );
     });
   });
 

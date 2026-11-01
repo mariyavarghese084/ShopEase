@@ -535,31 +535,6 @@ class _CustomerHomeViewState extends State<CustomerHomeView> {
               },
             ),
             const NotificationBellButton(size: 22),
-            // Material(
-            //   color: AppColors.cardBackground,
-            //   borderRadius: BorderRadius.circular(AppRadius.full),
-            //   elevation: 1,
-            //   shadowColor: AppColors.divider,
-            //   child: InkWell(
-            //     borderRadius: BorderRadius.circular(AppRadius.full),
-            //     onTap: () {
-            //       controller.setBottomNavIndex(2); // Jump to cart tab
-            //     },
-            //     child: Padding(
-            //       padding: const EdgeInsets.all(9),
-            //       child: Badge(
-            //         backgroundColor: AppColors.luxuryWine,
-            //         label: Text('${cart.itemCount}'),
-            //         isLabelVisible: cart.itemCount > 0,
-            //         child: const Icon(
-            //           Icons.shopping_bag_outlined,
-            //           color: AppColors.mainText,
-            //           size: 21,
-            //         ),
-            //       ),
-            //     ),
-            //   ),
-            // ),
           ],
         ),
       ],
@@ -1103,12 +1078,14 @@ class _CustomerHomeViewState extends State<CustomerHomeView> {
           delegate: SliverChildBuilderDelegate((context, index) {
             final product = controller.displayedProducts[index];
 
-            return ProductCard(
-              product: product,
-              heroTag: 'home_grid_${product.id}',
-              isFavorite: controller.isFavorite(product.id),
-              onFavoriteToggle: () => controller.toggleFavorite(product.id),
-              onAddToCart: () {
+            return StaggeredSlideFade(
+              index: index,
+              child: ProductCard(
+                product: product,
+                heroTag: 'home_grid_${product.id}',
+                isFavorite: controller.isFavorite(product.id),
+                onFavoriteToggle: () => controller.toggleFavorite(product.id),
+                onAddToCart: () {
                 cart.addItem(product, quantity: 1);
                 ScaffoldMessenger.of(context).clearSnackBars();
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -1156,7 +1133,8 @@ class _CustomerHomeViewState extends State<CustomerHomeView> {
                   ),
                 );
               },
-            );
+            ),
+          );
           }, childCount: controller.displayedProducts.length),
         );
       },

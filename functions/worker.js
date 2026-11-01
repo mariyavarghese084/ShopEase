@@ -636,6 +636,7 @@ async function dispatchNotificationRequest({ db, messaging, docRef, requestId, d
       });
     }
 
+    case "customer_order_status_update":
     case "order_status_update": {
       const customerUid = data.customerUid;
       const orderId = data.orderId;
@@ -663,6 +664,7 @@ async function dispatchNotificationRequest({ db, messaging, docRef, requestId, d
       const body =
         data.body || `Your order status is now: ${data.newStatusLabel || data.newStatus}.`;
       const targetRoute = data.targetRoute || data.route || "/customer/orders";
+      const targetId = data.targetId || orderId || "";
 
       const payload = buildFcmMulticastMessage({
         tokens,
@@ -672,9 +674,11 @@ async function dispatchNotificationRequest({ db, messaging, docRef, requestId, d
           type: "order",
           requestId,
           orderId: orderId || "",
+          customerUid: customerUid || "",
           route: targetRoute,
           targetRoute: targetRoute,
-          action: "order_status_update",
+          targetId: targetId,
+          action: "customer_order_status_update",
           newStatus: data.newStatus || "",
         },
       });

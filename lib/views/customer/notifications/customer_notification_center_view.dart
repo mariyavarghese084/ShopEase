@@ -63,25 +63,31 @@ class _CustomerNotificationCenterViewState
       appBar: AppBar(
         backgroundColor: AppColors.cardBackground,
         elevation: 0,
+        titleSpacing: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
           color: AppColors.mainText,
           onPressed: () => Navigator.of(context).maybePop(),
         ),
         title: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            const Text(
-              'Notification Center',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-                color: AppColors.mainText,
+            const Flexible(
+              child: Text(
+                'Notification Center',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.mainText,
+                ),
               ),
             ),
             if (unreadCount > 0) ...[
-              const SizedBox(width: 8),
+              const SizedBox(width: 6),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                 decoration: BoxDecoration(
                   color: AppColors.luxuryWine,
                   borderRadius: BorderRadius.circular(10),
@@ -102,12 +108,17 @@ class _CustomerNotificationCenterViewState
           if (notifications.isNotEmpty) ...[
             TextButton(
               onPressed: () => controller?.markAllAsRead(),
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.luxuryWine,
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                minimumSize: const Size(0, 36),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
               child: const Text(
                 'Mark All Read',
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
-                  color: AppColors.luxuryWine,
                 ),
               ),
             ),
@@ -115,9 +126,11 @@ class _CustomerNotificationCenterViewState
               icon: const Icon(Icons.delete_sweep_outlined, size: 20),
               color: AppColors.secondaryText,
               tooltip: 'Clear All Notifications',
+              padding: const EdgeInsets.symmetric(horizontal: 6),
+              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
               onPressed: () => _confirmClearAll(context, controller),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 4),
           ],
         ],
         bottom: const PreferredSize(

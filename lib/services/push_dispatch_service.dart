@@ -248,6 +248,40 @@ class BackendPushDispatchService implements PushDispatchService {
     }
   }
 
+  static String getOrderStatusTitle(OrderModel order, OrderProgressStatus status) {
+    switch (status) {
+      case OrderProgressStatus.placed:
+        return 'Order Confirmed: #${order.id}';
+      case OrderProgressStatus.processing:
+        return 'Order Processing: #${order.id}';
+      case OrderProgressStatus.shipped:
+        return 'Order Shipped: #${order.id}';
+      case OrderProgressStatus.outForDelivery:
+        return 'Out for Delivery: #${order.id}';
+      case OrderProgressStatus.delivered:
+        return 'Order Delivered: #${order.id}';
+      case OrderProgressStatus.cancelled:
+        return 'Order Cancelled: #${order.id}';
+    }
+  }
+
+  static String getOrderStatusBody(OrderProgressStatus status) {
+    switch (status) {
+      case OrderProgressStatus.placed:
+        return 'Your order has been confirmed!';
+      case OrderProgressStatus.processing:
+        return 'Your order is being prepared.';
+      case OrderProgressStatus.shipped:
+        return 'Your order has been shipped!';
+      case OrderProgressStatus.outForDelivery:
+        return 'Your order is out for delivery.';
+      case OrderProgressStatus.delivered:
+        return 'Your order has been delivered. Thank you for shopping with AÈRA!';
+      case OrderProgressStatus.cancelled:
+        return 'Your order has been cancelled.';
+    }
+  }
+
   @override
   Future<PushDispatchResult> dispatchCustomerOrderStatusUpdate({
     required String customerUid,
@@ -255,25 +289,23 @@ class BackendPushDispatchService implements PushDispatchService {
     required OrderProgressStatus newStatus,
   }) async {
     final now = DateTime.now();
-    final requestId = 'update_order_${order.id}_${newStatus.name}';
+    final requestId =
+        'status_order_${order.id}_${newStatus.name}_${now.millisecondsSinceEpoch}';
 
-    final title = 'Order #${order.id} Updated';
-    final body = 'Your order fulfillment status is now: ${newStatus.label}.';
+    final title = getOrderStatusTitle(order, newStatus);
+    final body = getOrderStatusBody(newStatus);
 
     final payload = {
       'requestId': requestId,
-      'action': 'order_status_update',
+      'action': 'customer_order_status_update',
       'customerUid': customerUid,
       'orderId': order.id,
       'title': title,
       'body': body,
-      'orderTotal': order.total,
-      'newStatus': newStatus.name,
-      'newStatusLabel': newStatus.label,
       'targetRoute': '/customer/orders',
       'targetId': order.id,
-      'status': 'queued',
       'createdAt': Timestamp.fromDate(now),
+      'status': 'queued',
     };
 
     try {
@@ -282,7 +314,7 @@ class BackendPushDispatchService implements PushDispatchService {
         await col.doc(requestId).set(payload);
         debugPrint(
           '[ShopEase:PushDispatch] Push request created: id=$requestId, '
-          'action=order_status_update, customerUid=$customerUid, orderId=${order.id}, newStatus=${newStatus.name}',
+          'action=customer_order_status_update, customerUid=$customerUid, orderId=${order.id}, newStatus=${newStatus.name}',
         );
       }
       return PushDispatchResult(
@@ -393,23 +425,30 @@ class InMemoryPushDispatchService implements PushDispatchService {
     required OrderProgressStatus newStatus,
   }) async {
     final now = DateTime.now();
-    final title = 'Order #${order.id} Updated';
-    final body = 'Your order fulfillment status is now: ${newStatus.label}.';
+    final title =
+        BackendPushDispatchService.getOrderStatusTitle(order, newStatus);
+    final body = BackendPushDispatchService.getOrderStatusBody(newStatus);
+    final requestId =
+        'status_order_${order.id}_${newStatus.name}_${now.millisecondsSinceEpoch}';
+
     dispatchedRequests.add({
-      'action': 'status_update',
+      'requestId': requestId,
+      'action': 'customer_order_status_update',
       'customerUid': customerUid,
       'orderId': order.id,
-      'newStatus': newStatus,
+      'newStatus': newStatus.name,
       'title': title,
       'body': body,
-      'orderTotal': order.total,
       'targetRoute': '/customer/orders',
       'targetId': order.id,
+      'createdAt': now,
+      'status': 'queued',
     });
     return PushDispatchResult(
       success: true,
       deliveryStatus: 'queued_for_backend',
       message: 'Mock status update dispatched',
+      requestId: requestId,
       timestamp: now,
     );
   }

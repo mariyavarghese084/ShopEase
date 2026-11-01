@@ -10,6 +10,7 @@ import '../../../models/order_model.dart';
 import '../../../models/product_model.dart';
 import '../admin_scaffold.dart';
 import '../orders/order_details_dialog.dart';
+import '../../../widgets/luxury_ui_components.dart';
 
 /// AÈRA Executive Business Analytics Dashboard.
 ///
@@ -384,11 +385,16 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
         if (constraints.maxWidth >= 900) {
           return Row(
             children: cards
+                .asMap()
+                .entries
                 .map(
-                  (c) => Expanded(
+                  (e) => Expanded(
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 6),
-                      child: c,
+                      child: StaggeredSlideFade(
+                        index: e.key,
+                        child: e.value,
+                      ),
                     ),
                   ),
                 )
@@ -401,15 +407,32 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
           return Wrap(
             spacing: 10,
             runSpacing: 10,
-            children: cards.map((c) => SizedBox(width: itemWidth, child: c)).toList(),
+            children: cards
+                .asMap()
+                .entries
+                .map((e) => SizedBox(
+                      width: itemWidth,
+                      child: StaggeredSlideFade(
+                        index: e.key,
+                        child: e.value,
+                      ),
+                    ))
+                .toList(),
           );
         }
 
         return Column(
           children: cards
+              .asMap()
+              .entries
               .map(
-                (c) =>
-                    Padding(padding: const EdgeInsets.only(bottom: 10), child: c),
+                (e) => Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: StaggeredSlideFade(
+                    index: e.key,
+                    child: e.value,
+                  ),
+                ),
               )
               .toList(),
         );
@@ -426,20 +449,9 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
     required String badgeText,
     bool isCompact = false,
   }) {
-    return Container(
+    return HoverElevatedCard(
       padding: EdgeInsets.all(isCompact ? 12 : 20),
-      decoration: BoxDecoration(
-        color: AppColors.cardBackground,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.divider),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(6),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
+      borderRadius: 16,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

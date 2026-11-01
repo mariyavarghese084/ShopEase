@@ -62,8 +62,9 @@ class _ProductDetailViewState extends State<ProductDetailView> {
 
   @override
   Widget build(BuildContext context) {
-    final product = widget.product;
     final homeController = context.watch<HomeController>();
+    final product =
+        homeController.getProductById(widget.product.id) ?? widget.product;
     final cartController = context.watch<CartController>();
     final isFav = homeController.isFavorite(product.id);
 
@@ -228,7 +229,7 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                                 ),
                               ),
                               const SizedBox(height: 4),
-                              Text(
+                                Text(
                                 product.brand.isNotEmpty
                                     ? '${product.brand.toUpperCase()} • ${product.subtitle}'
                                     : product.subtitle,
@@ -237,6 +238,51 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                                   fontWeight: FontWeight.w700,
                                   color: AppColors.champagneGold,
                                   letterSpacing: 1.2,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 3,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: product.isInStock
+                                      ? const Color(0xFF2E7D32).withAlpha(25)
+                                      : const Color(0xFFC62828).withAlpha(25),
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(
+                                    color: product.isInStock
+                                        ? const Color(0xFF2E7D32).withAlpha(80)
+                                        : const Color(0xFFC62828).withAlpha(80),
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      product.isInStock
+                                          ? Icons.check_circle_rounded
+                                          : Icons.cancel_rounded,
+                                      size: 12,
+                                      color: product.isInStock
+                                          ? const Color(0xFF2E7D32)
+                                          : const Color(0xFFC62828),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      product.isInStock
+                                          ? 'In Stock (${product.stockQuantity} available)'
+                                          : 'Out of Stock',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w700,
+                                        color: product.isInStock
+                                            ? const Color(0xFF2E7D32)
+                                            : const Color(0xFFC62828),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ],
@@ -401,7 +447,9 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                                 iconSize: 18,
                                 splashRadius: 18,
                                 icon: const Icon(Icons.remove),
-                                onPressed: _decrementQuantity,
+                                onPressed: product.isInStock
+                                    ? _decrementQuantity
+                                    : null,
                               ),
                               Padding(
                                 padding: const EdgeInsets.symmetric(
@@ -409,10 +457,12 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                                 ),
                                 child: Text(
                                   '$_quantity',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
-                                    color: AppColors.mainText,
+                                    color: product.isInStock
+                                        ? AppColors.mainText
+                                        : AppColors.secondaryText,
                                   ),
                                 ),
                               ),
@@ -420,7 +470,9 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                                 iconSize: 18,
                                 splashRadius: 18,
                                 icon: const Icon(Icons.add),
-                                onPressed: _incrementQuantity,
+                                onPressed: product.isInStock
+                                    ? _incrementQuantity
+                                    : null,
                               ),
                             ],
                           ),
@@ -478,70 +530,91 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                     ),
                     const SizedBox(width: AppSpacing.md),
 
-                    // Large "Shto në Shportë" button
+                    // Large "Add to Bag" button
                     Expanded(
                       child: ElevatedButton.icon(
-                        onPressed: () {
-                          cartController.addItem(
-                            product,
-                            quantity: _quantity,
-                            size: _selectedSize,
-                          );
+                        onPressed: product.isInStock
+                            ? () {
+                                cartController.addItem(
+                                  product,
+                                  quantity: _quantity,
+                                  size: _selectedSize,
+                                );
 
-                          ScaffoldMessenger.of(context).clearSnackBars();
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Row(
-                                children: [
-                                  const Icon(
-                                    Icons.check_circle_rounded,
-                                    color: AppColors.white,
-                                    size: 18,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(
-                                      'Added to bag: $_quantity x ${product.name} ($_selectedSize)',
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(fontWeight: FontWeight.w600),
+                                ScaffoldMessenger.of(context).clearSnackBars();
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Row(
+                                      children: [
+                                        const Icon(
+                                          Icons.check_circle_rounded,
+                                          color: AppColors.white,
+                                          size: 18,
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: Text(
+                                            'Added to bag: $_quantity x ${product.name} ($_selectedSize)',
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    backgroundColor: AppColors.luxuryWine,
+                                    behavior: SnackBarBehavior.floating,
+                                    duration:
+                                        const Duration(milliseconds: 1400),
+                                    action: SnackBarAction(
+                                      label: 'VIEW BAG',
+                                      textColor: AppColors.champagneGold,
+                                      onPressed: () {
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).hideCurrentSnackBar();
+                                        Navigator.of(
+                                          context,
+                                        ).pushNamed(AppRoutes.cart);
+                                      },
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(
+                                        AppRadius.md,
+                                      ),
                                     ),
                                   ),
-                                ],
-                              ),
-                              backgroundColor: AppColors.luxuryWine,
-                              behavior: SnackBarBehavior.floating,
-                              duration: const Duration(milliseconds: 1400),
-                              action: SnackBarAction(
-                                label: 'VIEW BAG',
-                                textColor: AppColors.champagneGold,
-                                onPressed: () {
-                                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                                  Navigator.of(context).pushNamed(AppRoutes.cart);
-                                },
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(AppRadius.md),
-                              ),
-                            ),
-                          );
-                        },
-                        icon: const Icon(Icons.shopping_bag_outlined, size: 20),
-                        label: const Text(
-                          'Add to Bag',
-                          style: TextStyle(
+                                );
+                              }
+                            : null,
+                        icon: Icon(
+                          product.isInStock
+                              ? Icons.shopping_bag_outlined
+                              : Icons.remove_shopping_cart_outlined,
+                          size: 20,
+                        ),
+                        label: Text(
+                          product.isInStock ? 'Add to Bag' : 'Out of Stock',
+                          style: const TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.luxuryWine,
+                          backgroundColor: product.isInStock
+                              ? AppColors.luxuryWine
+                              : AppColors.divider.withAlpha(160),
                           foregroundColor: AppColors.white,
+                          disabledBackgroundColor:
+                              AppColors.divider.withAlpha(160),
+                          disabledForegroundColor: AppColors.secondaryText,
                           minimumSize: const Size(double.infinity, 48),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
                           ),
-                          elevation: 2,
+                          elevation: product.isInStock ? 2 : 0,
                           shadowColor: AppColors.luxuryWine.withAlpha(80),
                         ),
                       ),

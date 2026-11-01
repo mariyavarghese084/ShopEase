@@ -234,7 +234,7 @@ class AdminProductController extends ChangeNotifier {
     }
     final updated = product.copyWith(
       stockQuantity: newStock,
-      isAvailable: newStock > 0 ? true : product.isAvailable,
+      isAvailable: newStock > 0 ? true : false,
     );
     return await saveProduct(updated, isEditing: true);
   }

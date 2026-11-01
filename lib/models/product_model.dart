@@ -57,6 +57,9 @@ class ProductModel {
   /// Compatibility alias for the local or remote image asset path.
   String? get imageAssetPath => imageUrl;
 
+  /// Returns true if the product is marked available and has positive stock.
+  bool get isInStock => isAvailable && stockQuantity > 0;
+
   /// Returns true if this product has a discount.
   bool get hasDiscount => originalPrice != null && originalPrice! > price;
 
@@ -156,8 +159,12 @@ class ProductModel {
       rating: (map['rating'] as num?)?.toDouble() ?? 4.5,
       reviewCount: (map['reviewCount'] as num?)?.toInt() ?? 0,
       isFeatured: map['isFeatured'] as bool? ?? false,
-      stockQuantity: (map['stockQuantity'] as num?)?.toInt() ?? 10,
-      isAvailable: map['isAvailable'] as bool? ?? true,
+      stockQuantity: (map['stockQuantity'] as num?)?.toInt() ??
+          (map['stock'] as num?)?.toInt() ??
+          10,
+      isAvailable: (map['isAvailable'] as bool?) ??
+          (map['inStock'] as bool?) ??
+          true,
       tag: map['tag'] as String?,
       imageUrl: map['imageUrl'] as String?,
       subtitle: map['subtitle'] as String? ?? 'LUXURY COSMETICS',

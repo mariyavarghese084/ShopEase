@@ -32,7 +32,7 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 class WebPushConfig {
   /// Replace this placeholder with the actual Web Push certificate key pair from Firebase Console.
   /// If null or empty, web token generation will log an instructional notice for browser push subscription.
-  static const String? vapidPublicKey = null; // Placeholder: "YOUR_FIREBASE_CONSOLE_VAPID_PUBLIC_KEY"
+  static const String? vapidPublicKey = null;
 }
 
 /// Represents the status of user notification authorization.

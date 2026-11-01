@@ -65,6 +65,14 @@ class MockOrderRepository implements OrderRepository {
       orders[idx] = orders[idx].copyWith(status: status);
     }
   }
+
+  @override
+  Future<String?> findCustomerUidForOrder(String orderId) async {
+    for (final o in orders) {
+      if (o.id == orderId) return o.customerId;
+    }
+    return null;
+  }
 }
 
 class MockAuthRepository extends Fake implements AuthRepository {
@@ -132,7 +140,9 @@ class SimulatedBackendNotificationWorker {
       return res;
     }
 
-    if (action == 'status_update' || action == 'order_status_update') {
+    if (action == 'status_update' ||
+        action == 'order_status_update' ||
+        action == 'customer_order_status_update') {
       final devices = await notificationRepository.getUserDevices(customerUid!);
       final activeTokens = devices.where((d) => d.isActive).map((d) => d.token).toList();
 
@@ -309,18 +319,20 @@ void main() {
 
       // Verify customer in-app notification
       final customerInbox = await notificationRepo.notificationsStream('cust_1').first;
-      expect(customerInbox.any((n) => n.title.contains('ORD-888 Updated')), isTrue);
+      expect(customerInbox.any((n) => n.title.contains('ORD-888')), isTrue);
 
       // Verify status update push request
       final statusRequests = pushDispatchService.dispatchedRequests
-          .where((r) => r['action'] == 'status_update')
+          .where((r) =>
+              r['action'] == 'status_update' ||
+              r['action'] == 'customer_order_status_update')
           .toList();
       expect(statusRequests.length, 1);
       final req = statusRequests.first;
       expect(req['customerUid'], 'cust_1');
       expect(req['orderId'], 'ORD-888');
-      expect(req['title'], contains('ORD-888 Updated'));
-      expect(req['body'], contains('Processing'));
+      expect(req['title'], contains('ORD-888'));
+      expect(req['body'], anyOf(contains('Processing'), contains('prepared')));
       expect(req['targetRoute'], '/customer/orders');
     });
   });

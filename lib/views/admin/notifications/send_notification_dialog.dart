@@ -99,7 +99,9 @@ class _SendNotificationDialogState extends State<SendNotificationDialog> {
         Navigator.of(context).pop();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(controller.successMessage ?? 'Notification sent successfully!'),
+            content: Text(
+              controller.successMessage ?? 'Notification sent successfully!',
+            ),
             backgroundColor: AppColors.success,
           ),
         );
@@ -191,8 +193,13 @@ class _SendNotificationDialogState extends State<SendNotificationDialog> {
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.close_rounded, color: AppColors.secondaryText),
-                    onPressed: isSending ? null : () => Navigator.of(context).pop(),
+                    icon: const Icon(
+                      Icons.close_rounded,
+                      color: AppColors.secondaryText,
+                    ),
+                    onPressed: isSending
+                        ? null
+                        : () => Navigator.of(context).pop(),
                   ),
                 ],
               ),
@@ -256,7 +263,8 @@ class _SendNotificationDialogState extends State<SendNotificationDialog> {
                               title: 'All Customers',
                               subtitle: '${customers.length} registered',
                               isSelected: _selectedAudience == 'all',
-                              onTap: () => setState(() => _selectedAudience = 'all'),
+                              onTap: () =>
+                                  setState(() => _selectedAudience = 'all'),
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -265,7 +273,9 @@ class _SendNotificationDialogState extends State<SendNotificationDialog> {
                               title: 'Specific Customer',
                               subtitle: 'Direct message',
                               isSelected: _selectedAudience == 'customer',
-                              onTap: () => setState(() => _selectedAudience = 'customer'),
+                              onTap: () => setState(
+                                () => _selectedAudience = 'customer',
+                              ),
                             ),
                           ),
                         ],
@@ -284,7 +294,10 @@ class _SendNotificationDialogState extends State<SendNotificationDialog> {
                               value: _selectedCustomer,
                               hint: const Text(
                                 'Select a customer from directory',
-                                style: TextStyle(fontSize: 13, color: AppColors.secondaryText),
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: AppColors.secondaryText,
+                                ),
                               ),
                               isExpanded: true,
                               dropdownColor: AppColors.cardBackground,
@@ -317,7 +330,10 @@ class _SendNotificationDialogState extends State<SendNotificationDialog> {
                       TextFormField(
                         controller: _titleController,
                         enabled: !isSending,
-                        style: const TextStyle(fontSize: 14, color: AppColors.mainText),
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: AppColors.mainText,
+                        ),
                         decoration: _inputDecoration(
                           hint: 'e.g. Exclusive Weekend Fragrance Offer',
                           icon: Icons.title_rounded,
@@ -337,9 +353,13 @@ class _SendNotificationDialogState extends State<SendNotificationDialog> {
                         controller: _messageController,
                         enabled: !isSending,
                         maxLines: 3,
-                        style: const TextStyle(fontSize: 14, color: AppColors.mainText),
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: AppColors.mainText,
+                        ),
                         decoration: _inputDecoration(
-                          hint: 'Enter your notification announcement content here...',
+                          hint:
+                              'Enter your notification announcement content here...',
                           icon: Icons.message_outlined,
                         ),
                         validator: (value) {
@@ -356,7 +376,10 @@ class _SendNotificationDialogState extends State<SendNotificationDialog> {
                       TextFormField(
                         controller: _imageUrlController,
                         enabled: !isSending,
-                        style: const TextStyle(fontSize: 14, color: AppColors.mainText),
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: AppColors.mainText,
+                        ),
                         decoration: _inputDecoration(
                           hint: 'https://example.com/banner.jpg',
                           icon: Icons.image_outlined,
@@ -378,7 +401,10 @@ class _SendNotificationDialogState extends State<SendNotificationDialog> {
                               color: AppColors.surfaceVariant.withAlpha(80),
                               child: const Text(
                                 'Invalid image URL or image failed to load',
-                                style: TextStyle(fontSize: 11, color: AppColors.secondaryText),
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: AppColors.secondaryText,
+                                ),
                               ),
                             ),
                           ),
@@ -411,7 +437,10 @@ class _SendNotificationDialogState extends State<SendNotificationDialog> {
                               value: _selectedProduct,
                               hint: const Text(
                                 'Select a product to open on tap',
-                                style: TextStyle(fontSize: 13, color: AppColors.secondaryText),
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: AppColors.secondaryText,
+                                ),
                               ),
                               isExpanded: true,
                               dropdownColor: AppColors.cardBackground,
@@ -441,7 +470,10 @@ class _SendNotificationDialogState extends State<SendNotificationDialog> {
                         TextFormField(
                           controller: _orderIdController,
                           enabled: !isSending,
-                          style: const TextStyle(fontSize: 13, color: AppColors.mainText),
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: AppColors.mainText,
+                          ),
                           decoration: _inputDecoration(
                             hint: 'Enter Order ID (e.g. ORD-123456)',
                             icon: Icons.receipt_long_outlined,
@@ -462,12 +494,20 @@ class _SendNotificationDialogState extends State<SendNotificationDialog> {
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   OutlinedButton(
-                    onPressed: isSending ? null : () => Navigator.of(context).pop(),
+                    onPressed: isSending
+                        ? null
+                        : () => Navigator.of(context).pop(),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppColors.secondaryText,
                       side: const BorderSide(color: AppColors.divider),
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 12,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      minimumSize: const Size(80, 44),
                     ),
                     child: const Text('Cancel'),
                   ),
@@ -477,8 +517,14 @@ class _SendNotificationDialogState extends State<SendNotificationDialog> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.luxuryWine,
                       foregroundColor: AppColors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 12,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      minimumSize: const Size(120, 44),
                     ),
                     child: isSending
                         ? const SizedBox(
@@ -537,7 +583,9 @@ class _SendNotificationDialogState extends State<SendNotificationDialog> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.luxuryWine.withAlpha(20) : AppColors.surfaceVariant.withAlpha(50),
+          color: isSelected
+              ? AppColors.luxuryWine.withAlpha(20)
+              : AppColors.surfaceVariant.withAlpha(50),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isSelected ? AppColors.luxuryWine : AppColors.divider,
@@ -549,7 +597,9 @@ class _SendNotificationDialogState extends State<SendNotificationDialog> {
             Icon(
               isSelected ? Icons.radio_button_checked : Icons.radio_button_off,
               size: 18,
-              color: isSelected ? AppColors.luxuryWine : AppColors.secondaryText,
+              color: isSelected
+                  ? AppColors.luxuryWine
+                  : AppColors.secondaryText,
             ),
             const SizedBox(width: 10),
             Expanded(
@@ -561,12 +611,17 @@ class _SendNotificationDialogState extends State<SendNotificationDialog> {
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.bold,
-                      color: isSelected ? AppColors.luxuryWine : AppColors.mainText,
+                      color: isSelected
+                          ? AppColors.luxuryWine
+                          : AppColors.mainText,
                     ),
                   ),
                   Text(
                     subtitle,
-                    style: const TextStyle(fontSize: 11, color: AppColors.secondaryText),
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: AppColors.secondaryText,
+                    ),
                   ),
                 ],
               ),
@@ -597,7 +652,10 @@ class _SendNotificationDialogState extends State<SendNotificationDialog> {
     );
   }
 
-  InputDecoration _inputDecoration({required String hint, required IconData icon}) {
+  InputDecoration _inputDecoration({
+    required String hint,
+    required IconData icon,
+  }) {
     return InputDecoration(
       hintText: hint,
       hintStyle: const TextStyle(fontSize: 13, color: AppColors.secondaryText),

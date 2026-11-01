@@ -36,12 +36,16 @@ class _AdminNotificationsViewState extends State<AdminNotificationsView> {
     final isLoading = controller.isLoading;
 
     final filtered = campaigns.where((c) {
-      final matchesSearch = _searchQuery.isEmpty ||
+      final matchesSearch =
+          _searchQuery.isEmpty ||
           c.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
           c.body.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-          (c.recipientName ?? '').toLowerCase().contains(_searchQuery.toLowerCase());
+          (c.recipientName ?? '').toLowerCase().contains(
+            _searchQuery.toLowerCase(),
+          );
 
-      final matchesFilter = _selectedFilter == 'All' ||
+      final matchesFilter =
+          _selectedFilter == 'All' ||
           c.type.toLowerCase() == _selectedFilter.toLowerCase();
 
       return matchesSearch && matchesFilter;
@@ -56,41 +60,61 @@ class _AdminNotificationsViewState extends State<AdminNotificationsView> {
         child: LayoutBuilder(
           builder: (context, constraints) {
             final isDesktop = constraints.maxWidth >= 1024;
-            final isTablet = constraints.maxWidth >= 650 && constraints.maxWidth < 1024;
+            final isTablet =
+                constraints.maxWidth >= 650 && constraints.maxWidth < 1024;
             final isMobile = constraints.maxWidth < 650;
+
+            final horizontalPadding = isMobile ? 16.0 : 24.0;
+            final maxContentWidth = constraints.maxWidth.isFinite
+                ? (constraints.maxWidth - (horizontalPadding * 2))
+                    .clamp(0.0, double.infinity)
+                : double.infinity;
 
             return SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
-              padding: EdgeInsets.all(isMobile ? 16 : 24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // ── Action Bar / Header ─────────────────────────────────────
-                  _buildHeader(context, isMobile, controller),
-                  const SizedBox(height: 20),
+              padding: EdgeInsets.all(horizontalPadding),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  minWidth: maxContentWidth.isFinite ? maxContentWidth : 0.0,
+                  maxWidth: maxContentWidth,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // ── Action Bar / Header ─────────────────────────────────────
+                    _buildHeader(
+                      context,
+                      isMobile,
+                      controller,
+                      availableWidth: maxContentWidth,
+                    ),
+                    const SizedBox(height: 20),
 
-                  // ── KPI Metrics Cards ───────────────────────────────────────
-                  _buildKpiSection(controller, isDesktop, isTablet),
-                  const SizedBox(height: 24),
+                    // ── KPI Metrics Cards ───────────────────────────────────────
+                    _buildKpiSection(controller, isDesktop, isTablet),
+                    const SizedBox(height: 24),
 
-                  // ── Search & Filter Bar ─────────────────────────────────────
-                  _buildFilterBar(),
-                  const SizedBox(height: 16),
+                    // ── Search & Filter Bar ─────────────────────────────────────
+                    _buildFilterBar(),
+                    const SizedBox(height: 16),
 
-                  // ── Campaign Activity Table / List ──────────────────────────
-                  if (isLoading && campaigns.isEmpty)
-                    const Padding(
-                      padding: EdgeInsets.all(40),
-                      child: Center(
-                        child: CircularProgressIndicator(color: AppColors.luxuryWine),
-                      ),
-                    )
-                  else if (filtered.isEmpty)
-                    _buildEmptyState(context)
-                  else
-                    _buildCampaignList(filtered, controller, isMobile),
-                  const SizedBox(height: 40),
-                ],
+                    // ── Campaign Activity Table / List ──────────────────────────
+                    if (isLoading && campaigns.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.all(40),
+                        child: Center(
+                          child: CircularProgressIndicator(
+                            color: AppColors.luxuryWine,
+                          ),
+                        ),
+                      )
+                    else if (filtered.isEmpty)
+                      _buildEmptyState(context)
+                    else
+                      _buildCampaignList(filtered, controller, isMobile),
+                    const SizedBox(height: 40),
+                  ],
+                ),
               ),
             );
           },
@@ -102,10 +126,59 @@ class _AdminNotificationsViewState extends State<AdminNotificationsView> {
   Widget _buildHeader(
     BuildContext context,
     bool isMobile,
-    AdminNotificationController controller,
-  ) {
+    AdminNotificationController controller, {
+    double? availableWidth,
+  }) {
+    final bool shouldStack =
+        isMobile || (availableWidth != null && availableWidth < 560);
+
+    if (shouldStack) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Push Notifications & Announcements',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+              color: AppColors.mainText,
+            ),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Broadcast messages, flash sales, and customer order alerts',
+            style: TextStyle(fontSize: 12, color: AppColors.secondaryText),
+          ),
+          const SizedBox(height: 12),
+          ConstrainedBox(
+            constraints: const BoxConstraints(
+              minWidth: 160,
+              maxWidth: 240,
+            ),
+            child: ElevatedButton.icon(
+              onPressed: () => SendNotificationDialog.show(context),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.luxuryWine,
+                foregroundColor: AppColors.white,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              icon: const Icon(Icons.add_rounded, size: 18),
+              label: const Text(
+                'Send Notification',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ),
+        ],
+      );
+    }
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         const Expanded(
           child: Column(
@@ -127,23 +200,27 @@ class _AdminNotificationsViewState extends State<AdminNotificationsView> {
             ],
           ),
         ),
-        ElevatedButton.icon(
-          onPressed: () => SendNotificationDialog.show(context),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.luxuryWine,
-            foregroundColor: AppColors.white,
-            padding: EdgeInsets.symmetric(
-              horizontal: isMobile ? 12 : 20,
-              vertical: 12,
-            ),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
+        const SizedBox(width: 16),
+        ConstrainedBox(
+          constraints: const BoxConstraints(
+            minWidth: 160,
+            maxWidth: 220,
           ),
-          icon: const Icon(Icons.add_rounded, size: 18),
-          label: Text(
-            isMobile ? 'Send' : 'Send Notification',
-            style: const TextStyle(fontWeight: FontWeight.bold),
+          child: ElevatedButton.icon(
+            onPressed: () => SendNotificationDialog.show(context),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.luxuryWine,
+              foregroundColor: AppColors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            icon: const Icon(Icons.add_rounded, size: 18),
+            label: const Text(
+              'Send Notification',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
           ),
         ),
       ],
@@ -213,10 +290,7 @@ class _AdminNotificationsViewState extends State<AdminNotificationsView> {
             final cardWidth = isTablet
                 ? (constraints.maxWidth - 12) / 2
                 : constraints.maxWidth;
-            return SizedBox(
-              width: cardWidth,
-              child: _buildKpiCard(kpi),
-            );
+            return SizedBox(width: cardWidth, child: _buildKpiCard(kpi));
           }).toList(),
         );
       },
@@ -294,8 +368,15 @@ class _AdminNotificationsViewState extends State<AdminNotificationsView> {
           style: const TextStyle(fontSize: 13, color: AppColors.mainText),
           decoration: InputDecoration(
             hintText: 'Search notifications by title, body, or recipient...',
-            hintStyle: const TextStyle(fontSize: 13, color: AppColors.secondaryText),
-            prefixIcon: const Icon(Icons.search_rounded, size: 20, color: AppColors.secondaryText),
+            hintStyle: const TextStyle(
+              fontSize: 13,
+              color: AppColors.secondaryText,
+            ),
+            prefixIcon: const Icon(
+              Icons.search_rounded,
+              size: 20,
+              color: AppColors.secondaryText,
+            ),
             filled: true,
             fillColor: AppColors.cardBackground,
             border: OutlineInputBorder(
@@ -306,7 +387,10 @@ class _AdminNotificationsViewState extends State<AdminNotificationsView> {
               borderRadius: BorderRadius.circular(12),
               borderSide: const BorderSide(color: AppColors.divider),
             ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 12,
+            ),
           ),
         ),
         const SizedBox(height: 12),
@@ -325,10 +409,14 @@ class _AdminNotificationsViewState extends State<AdminNotificationsView> {
                   labelStyle: TextStyle(
                     fontSize: 12,
                     fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                    color: isSelected ? AppColors.luxuryWine : AppColors.secondaryText,
+                    color: isSelected
+                        ? AppColors.luxuryWine
+                        : AppColors.secondaryText,
                   ),
                   side: BorderSide(
-                    color: isSelected ? AppColors.luxuryWine : AppColors.divider,
+                    color: isSelected
+                        ? AppColors.luxuryWine
+                        : AppColors.divider,
                   ),
                   onSelected: (_) => setState(() => _selectedFilter = filter),
                 ),
@@ -402,7 +490,10 @@ class _AdminNotificationsViewState extends State<AdminNotificationsView> {
                     Row(
                       children: [
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
                             color: typeColor.withAlpha(25),
                             borderRadius: BorderRadius.circular(6),
@@ -419,7 +510,10 @@ class _AdminNotificationsViewState extends State<AdminNotificationsView> {
                         ),
                         const SizedBox(width: 8),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
                             color: AppColors.surfaceVariant.withAlpha(80),
                             borderRadius: BorderRadius.circular(6),
@@ -481,17 +575,30 @@ class _AdminNotificationsViewState extends State<AdminNotificationsView> {
             Row(
               children: [
                 if (item.targetRoute != null) ...[
-                  const Icon(Icons.touch_app_outlined, size: 14, color: AppColors.secondaryText),
+                  const Icon(
+                    Icons.touch_app_outlined,
+                    size: 14,
+                    color: AppColors.secondaryText,
+                  ),
                   const SizedBox(width: 4),
-                  Text(
-                    'Opens: ${item.targetRoute}${item.targetId != null ? " (${item.targetId})" : ""}',
-                    style: const TextStyle(fontSize: 11, color: AppColors.secondaryText),
+                  Flexible(
+                    child: Text(
+                      'Opens: ${item.targetRoute}${item.targetId != null ? " (${item.targetId})" : ""}',
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: AppColors.secondaryText,
+                      ),
+                    ),
                   ),
                   const SizedBox(width: 14),
                 ],
                 const Spacer(),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: AppColors.success.withAlpha(20),
                     borderRadius: BorderRadius.circular(6),
@@ -499,7 +606,11 @@ class _AdminNotificationsViewState extends State<AdminNotificationsView> {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.check_circle_rounded, size: 11, color: AppColors.success),
+                      const Icon(
+                        Icons.check_circle_rounded,
+                        size: 11,
+                        color: AppColors.success,
+                      ),
                       const SizedBox(width: 4),
                       Text(
                         item.deliveryStatus.toUpperCase(),
@@ -562,6 +673,7 @@ class _AdminNotificationsViewState extends State<AdminNotificationsView> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
+                minimumSize: const Size(120, 40),
               ),
               icon: const Icon(Icons.add_rounded, size: 16),
               label: const Text('Compose Notification'),
@@ -598,6 +710,7 @@ class _AdminNotificationsViewState extends State<AdminNotificationsView> {
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.error,
               foregroundColor: AppColors.white,
+              minimumSize: const Size(80, 36),
             ),
             child: const Text('Delete'),
           ),

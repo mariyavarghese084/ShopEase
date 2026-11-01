@@ -7,3 +7,4 @@ export 'primary_button.dart';
 export 'product_card.dart';
 export 'notification_bell_button.dart';
 export 'notification_sheet.dart';
+export 'luxury_ui_components.dart';

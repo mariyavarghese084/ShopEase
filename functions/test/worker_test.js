@@ -584,8 +584,129 @@ async function runWorkerTests() {
     console.log("  ✓ Test 9 Passed: End-to-end batch processing dispatched, failed, and skipped correctly.\n");
   }
 
+  // ── Test 10: Order Status Progression Push Notifications ───────────────────
+  {
+    console.log("Test 10: Automatic customer_order_status_update notifications for all transitions...");
+
+    const transitions = [
+      {
+        action: "customer_order_status_update",
+        customerUid: "cust_transitions_1",
+        orderId: "ORD-CONF-PROC-01",
+        title: "Order Processing: #ORD-CONF-PROC-01",
+        body: "Your order is being prepared.",
+        targetRoute: "/customer/orders",
+        targetId: "ORD-CONF-PROC-01",
+        status: "queued",
+      },
+      {
+        action: "customer_order_status_update",
+        customerUid: "cust_transitions_1",
+        orderId: "ORD-PROC-SHIP-02",
+        title: "Order Shipped: #ORD-PROC-SHIP-02",
+        body: "Your order has been shipped!",
+        targetRoute: "/customer/orders",
+        targetId: "ORD-PROC-SHIP-02",
+        status: "queued",
+      },
+      {
+        action: "customer_order_status_update",
+        customerUid: "cust_transitions_1",
+        orderId: "ORD-SHIP-OFD-03",
+        title: "Out for Delivery: #ORD-SHIP-OFD-03",
+        body: "Your order is out for delivery.",
+        targetRoute: "/customer/orders",
+        targetId: "ORD-SHIP-OFD-03",
+        status: "queued",
+      },
+      {
+        action: "customer_order_status_update",
+        customerUid: "cust_transitions_1",
+        orderId: "ORD-OFD-DELV-04",
+        title: "Order Delivered: #ORD-OFD-DELV-04",
+        body: "Your order has been delivered. Thank you for shopping with AÈRA!",
+        targetRoute: "/customer/orders",
+        targetId: "ORD-OFD-DELV-04",
+        status: "queued",
+      },
+    ];
+
+    for (const reqData of transitions) {
+      let dispatchedPayload = null;
+      let finalPatch = null;
+
+      const mockDocRef = {
+        id: `req_${reqData.orderId}`,
+        get: async () => ({ exists: true, data: () => ({ ...reqData }) }),
+        update: async (patch) => {
+          finalPatch = patch;
+        },
+      };
+
+      const mockDb = {
+        collection: (col) => ({
+          doc: (uid) => ({
+            collection: () => ({
+              where: () => ({
+                get: async () => ({
+                  docs: [
+                    {
+                      id: `dev_${uid}`,
+                      ref: { update: async () => {} },
+                      data: () => ({
+                        token: `token_active_${uid}`,
+                        isActive: true,
+                        platform: "android",
+                      }),
+                    },
+                  ],
+                }),
+              }),
+            }),
+          }),
+        }),
+        batch: () => ({
+          update: () => {},
+          commit: async () => {},
+        }),
+      };
+
+      const mockMessaging = {
+        sendEachForMulticast: async (payload) => {
+          dispatchedPayload = payload;
+          return {
+            successCount: payload.tokens.length,
+            failureCount: 0,
+            responses: [{ success: true, messageId: "msg_success_01" }],
+          };
+        },
+      };
+
+      const result = await dispatchNotificationRequest({
+        db: mockDb,
+        messaging: mockMessaging,
+        docRef: mockDocRef,
+        requestId: mockDocRef.id,
+        data: reqData,
+      });
+
+      assert.strictEqual(result.success, true);
+      assert.strictEqual(finalPatch.status, "sent");
+      assert.strictEqual(dispatchedPayload.notification.title, reqData.title);
+      assert.strictEqual(dispatchedPayload.notification.body, reqData.body);
+      assert.strictEqual(dispatchedPayload.data.action, "customer_order_status_update");
+      assert.strictEqual(dispatchedPayload.data.orderId, reqData.orderId);
+      assert.strictEqual(dispatchedPayload.data.customerUid, reqData.customerUid);
+      assert.strictEqual(dispatchedPayload.data.targetRoute, "/customer/orders");
+      assert.strictEqual(dispatchedPayload.data.targetId, reqData.targetId);
+      assert.deepStrictEqual(dispatchedPayload.tokens, ["token_active_cust_transitions_1"]);
+    }
+
+    console.log("  ✓ Test 10 Passed: All 4 status transitions formatted, dispatched, and confirmed sent.\n");
+  }
+
   console.log("==================================================================");
-  console.log("  All 9 Standalone FCM Worker Tests PASSED Successfully (100%)");
+  console.log("  All 10 Standalone FCM Worker Tests PASSED Successfully (100%)");
   console.log("==================================================================\n");
 }
 

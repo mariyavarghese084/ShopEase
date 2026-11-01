@@ -7,6 +7,7 @@ class CustomerModel {
   final String email;
   final String? phoneNumber;
   final String? photoUrl;
+  final String? address;
   final String role;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -17,6 +18,7 @@ class CustomerModel {
     required this.email,
     this.phoneNumber,
     this.photoUrl,
+    this.address,
     this.role = 'customer',
     required this.createdAt,
     required this.updatedAt,
@@ -30,6 +32,7 @@ class CustomerModel {
     String? email,
     String? phoneNumber,
     String? photoUrl,
+    String? address,
     String? role,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -40,6 +43,7 @@ class CustomerModel {
       email: email ?? this.email,
       phoneNumber: phoneNumber ?? this.phoneNumber,
       photoUrl: photoUrl ?? this.photoUrl,
+      address: address ?? this.address,
       role: role ?? this.role,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
@@ -53,6 +57,7 @@ class CustomerModel {
       'email': email,
       if (phoneNumber != null) 'phoneNumber': phoneNumber,
       if (photoUrl != null) 'photoUrl': photoUrl,
+      if (address != null) 'address': address,
       'role': role,
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': Timestamp.fromDate(updatedAt),
@@ -77,6 +82,7 @@ class CustomerModel {
       email: map['email'] as String? ?? '',
       phoneNumber: map['phoneNumber'] as String?,
       photoUrl: map['photoUrl'] as String?,
+      address: map['address'] as String?,
       role: (map['role'] as String?)?.trim().toLowerCase() ?? 'customer',
       createdAt: parseDateTime(map['createdAt']),
       updatedAt: parseDateTime(map['updatedAt']),

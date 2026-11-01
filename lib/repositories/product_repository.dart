@@ -14,12 +14,15 @@ abstract class ProductRepository {
   Future<void> addProduct(ProductModel product);
   Future<void> updateProduct(ProductModel product);
   Future<void> deleteProduct(String id);
+  Stream<List<ProductModel>> watchProducts({String? categoryId});
 }
 
 /// In-memory implementation of [ProductRepository] for luxury cosmetics & beauty products.
 class InMemoryProductRepository implements ProductRepository {
   final List<ProductModel> _products;
   final List<CategoryModel> _categories;
+  final StreamController<List<ProductModel>> _productsStreamController =
+      StreamController<List<ProductModel>>.broadcast();
 
   InMemoryProductRepository({
     List<ProductModel>? initialProducts,
@@ -376,11 +379,36 @@ class InMemoryProductRepository implements ProductRepository {
     }
   }
 
+  void _notifyProductsChanged() {
+    if (!_productsStreamController.isClosed) {
+      _productsStreamController.add(List.unmodifiable(_products));
+    }
+  }
+
+  @override
+  Stream<List<ProductModel>> watchProducts({String? categoryId}) async* {
+    yield _filterByCategory(List<ProductModel>.from(_products), categoryId);
+    yield* _productsStreamController.stream.map(
+      (list) => _filterByCategory(List<ProductModel>.from(list), categoryId),
+    );
+  }
+
+  List<ProductModel> _filterByCategory(
+    List<ProductModel> list,
+    String? categoryId,
+  ) {
+    if (categoryId != null && categoryId.isNotEmpty && categoryId != 'all') {
+      return list.where((p) => p.categoryId == categoryId).toList();
+    }
+    return list;
+  }
+
   @override
   Future<void> addProduct(ProductModel product) async {
     await Future.delayed(const Duration(milliseconds: 50));
     _products.removeWhere((p) => p.id == product.id);
     _products.insert(0, product);
+    _notifyProductsChanged();
   }
 
   @override
@@ -392,12 +420,14 @@ class InMemoryProductRepository implements ProductRepository {
     } else {
       _products.insert(0, product);
     }
+    _notifyProductsChanged();
   }
 
   @override
   Future<void> deleteProduct(String id) async {
     await Future.delayed(const Duration(milliseconds: 50));
     _products.removeWhere((p) => p.id == id);
+    _notifyProductsChanged();
   }
 }
 
@@ -566,6 +596,31 @@ class FirestoreProductRepository implements ProductRepository {
       debugPrint('[ShopEase:ProductRepo] Unexpected error updating product: $e');
       throw 'An error occurred while updating the product: $e';
     }
+  }
+
+  @override
+  Stream<List<ProductModel>> watchProducts({String? categoryId}) {
+    if (_injectedFirestore == null && !FirebaseService.isInitialized) {
+      return _inMemoryFallback.watchProducts(categoryId: categoryId);
+    }
+    return _productsRef.snapshots().asyncMap((snap) async {
+      if (snap.docs.isEmpty) {
+        return _inMemoryFallback.getProducts(categoryId: categoryId);
+      }
+      var products = snap.docs.map((doc) {
+        final data = doc.data();
+        data.putIfAbsent('id', () => doc.id);
+        return ProductModel.fromMap(data);
+      }).toList();
+
+      if (categoryId != null && categoryId.isNotEmpty && categoryId != 'all') {
+        products = products.where((p) => p.categoryId == categoryId).toList();
+      }
+      return products;
+    }).handleError((e) {
+      debugPrint('[ShopEase:ProductRepo] Error watching remote products: $e');
+      return _inMemoryFallback.watchProducts(categoryId: categoryId);
+    });
   }
 
   @override

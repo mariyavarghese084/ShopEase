@@ -220,7 +220,7 @@ class OrderTrackingView extends StatelessWidget {
 
                 const SizedBox(height: AppSpacing.lg),
 
-                // ── 2. Interactive Status Advancement (Demo tool) ───────────
+                // ── 2. Order Progress Header (Read-Only) ────────────────────
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -232,15 +232,18 @@ class OrderTrackingView extends StatelessWidget {
                         color: AppColors.mainText,
                       ),
                     ),
-                    if (currentOrder.status != OrderProgressStatus.delivered &&
-                        currentOrder.status != OrderProgressStatus.cancelled)
-                      TextButton.icon(
-                        icon: const Icon(Icons.fast_forward_rounded, size: 16),
-                        label: const Text('Simulate Next Step'),
-                        onPressed: () {
-                          orderController.advanceOrderStatus(currentOrder.id);
-                        },
+                    TextButton.icon(
+                      icon: const Icon(Icons.refresh_rounded, size: 16, color: AppColors.luxuryWine),
+                      label: const Text(
+                        'Refresh',
+                        style: TextStyle(
+                          color: AppColors.luxuryWine,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
                       ),
+                      onPressed: () => orderController.refreshOrders(),
+                    ),
                   ],
                 ),
                 const SizedBox(height: AppSpacing.xs),

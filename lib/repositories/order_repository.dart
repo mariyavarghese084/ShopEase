@@ -23,6 +23,9 @@ abstract class OrderRepository {
     String? adminId,
     String? note,
   });
+
+  /// Identifies the owning customer's UID for the given [orderId].
+  Future<String?> findCustomerUidForOrder(String orderId);
 }
 
 /// In-memory implementation of [OrderRepository] for unit/widget testing and offline environments.
@@ -76,7 +79,9 @@ class InMemoryOrderRepository implements OrderRepository {
       final index = list.indexWhere((o) => o.id == orderId);
       if (index != -1) {
         final existing = list[index];
-        final history = List<OrderStatusHistoryEntry>.from(existing.statusHistory)..add(entry);
+        final history = List<OrderStatusHistoryEntry>.from(
+          existing.statusHistory,
+        )..add(entry);
         list[index] = existing.copyWith(
           status: status,
           updatedAt: DateTime.now(),
@@ -92,7 +97,9 @@ class InMemoryOrderRepository implements OrderRepository {
       final index = list.indexWhere((o) => o.id == orderId);
       if (index != -1) {
         final existing = list[index];
-        final history = List<OrderStatusHistoryEntry>.from(existing.statusHistory)..add(entry);
+        final history = List<OrderStatusHistoryEntry>.from(
+          existing.statusHistory,
+        )..add(entry);
         list[index] = existing.copyWith(
           status: status,
           updatedAt: DateTime.now(),
@@ -102,6 +109,16 @@ class InMemoryOrderRepository implements OrderRepository {
         return;
       }
     }
+  }
+
+  @override
+  Future<String?> findCustomerUidForOrder(String orderId) async {
+    for (final entry in _userOrders.entries) {
+      if (entry.value.any((o) => o.id == orderId)) {
+        return entry.key;
+      }
+    }
+    return null;
   }
 
   void _seedSampleOrders() {
@@ -226,8 +243,9 @@ class FirestoreOrderRepository implements OrderRepository {
   FirestoreOrderRepository({
     FirebaseFirestore? firestore,
     InMemoryOrderRepository? fallbackRepo,
-  })  : _injectedFirestore = firestore,
-        _fallbackRepo = fallbackRepo ?? InMemoryOrderRepository(seedSampleData: true);
+  }) : _injectedFirestore = firestore,
+       _fallbackRepo =
+           fallbackRepo ?? InMemoryOrderRepository(seedSampleData: true);
 
   FirebaseFirestore? get _firestore {
     if (_injectedFirestore != null) return _injectedFirestore;
@@ -237,8 +255,10 @@ class FirestoreOrderRepository implements OrderRepository {
     return null;
   }
 
-  CollectionReference<Map<String, dynamic>> _userOrders(FirebaseFirestore db, String uid) =>
-      db.collection('customers').doc(uid).collection('orders');
+  CollectionReference<Map<String, dynamic>> _userOrders(
+    FirebaseFirestore db,
+    String uid,
+  ) => db.collection('customers').doc(uid).collection('orders');
 
   @override
   Future<void> createOrder(String uid, OrderModel order) async {
@@ -251,9 +271,13 @@ class FirestoreOrderRepository implements OrderRepository {
       final orderData = order.toMap();
       orderData['createdAt'] = FieldValue.serverTimestamp();
       await _userOrders(db, uid).doc(order.id).set(orderData).timeout(_timeout);
-      debugPrint('[ShopEase:OrderRepo] Order ${order.id} saved to Firestore successfully.');
+      debugPrint(
+        '[ShopEase:OrderRepo] Order ${order.id} saved to Firestore successfully.',
+      );
     } on FirebaseException catch (e) {
-      debugPrint('[ShopEase:OrderRepo] FirebaseException saving order: ${e.code} - ${e.message}');
+      debugPrint(
+        '[ShopEase:OrderRepo] FirebaseException saving order: ${e.code} - ${e.message}',
+      );
       throw 'Failed to save order to Cloud Firestore (${e.code}): ${e.message ?? e.code}';
     } catch (e) {
       debugPrint('[ShopEase:OrderRepo] Unexpected error saving order: $e');
@@ -272,14 +296,23 @@ class FirestoreOrderRepository implements OrderRepository {
       if (snapshot.docs.isEmpty) {
         return _fallbackRepo.getOrders(uid);
       }
-      final orders = snapshot.docs
-          .map((doc) => OrderModel.fromMap(doc.data(), id: doc.id))
-          .toList();
+      final orders = snapshot.docs.map((doc) {
+        final data = doc.data();
+        if ((data['customerId'] as String?)?.isNotEmpty != true) {
+          final parentUid = doc.reference.parent.parent?.id;
+          if (parentUid != null && parentUid.isNotEmpty) {
+            data['customerId'] = parentUid;
+          }
+        }
+        return OrderModel.fromMap(data, id: doc.id);
+      }).toList();
 
       orders.sort((a, b) => b.createdAt.compareTo(a.createdAt));
       return orders;
     } on FirebaseException catch (e) {
-      debugPrint('[ShopEase:OrderRepo] Firebase error fetching orders: ${e.code} - ${e.message}');
+      debugPrint(
+        '[ShopEase:OrderRepo] Firebase error fetching orders: ${e.code} - ${e.message}',
+      );
       return _fallbackRepo.getOrders(uid);
     } catch (e) {
       debugPrint('[ShopEase:OrderRepo] Error fetching orders: $e');
@@ -295,19 +328,31 @@ class FirestoreOrderRepository implements OrderRepository {
     }
     try {
       // Query collectionGroup 'orders' across all customer subcollections
-      final snapshot = await db.collectionGroup('orders').get().timeout(_timeout);
+      final snapshot = await db
+          .collectionGroup('orders')
+          .get()
+          .timeout(_timeout);
       if (snapshot.docs.isEmpty) {
         return _fallbackRepo.getAllOrders();
       }
 
-      final orders = snapshot.docs
-          .map((doc) => OrderModel.fromMap(doc.data(), id: doc.id))
-          .toList();
+      final orders = snapshot.docs.map((doc) {
+        final data = doc.data();
+        if ((data['customerId'] as String?)?.isNotEmpty != true) {
+          final parentUid = doc.reference.parent.parent?.id;
+          if (parentUid != null && parentUid.isNotEmpty) {
+            data['customerId'] = parentUid;
+          }
+        }
+        return OrderModel.fromMap(data, id: doc.id);
+      }).toList();
 
       orders.sort((a, b) => b.createdAt.compareTo(a.createdAt));
       return orders;
     } on FirebaseException catch (e) {
-      debugPrint('[ShopEase:OrderRepo] Firebase error fetching all orders: ${e.code} - ${e.message}');
+      debugPrint(
+        '[ShopEase:OrderRepo] Firebase error fetching all orders: ${e.code} - ${e.message}',
+      );
       return _fallbackRepo.getAllOrders();
     } catch (e) {
       debugPrint('[ShopEase:OrderRepo] Error fetching all orders: $e');
@@ -353,7 +398,10 @@ class FirestoreOrderRepository implements OrderRepository {
       }
 
       if (uid.isNotEmpty) {
-        await _userOrders(db, uid).doc(orderId).update(updateData).timeout(_timeout);
+        await _userOrders(
+          db,
+          uid,
+        ).doc(orderId).update(updateData).timeout(_timeout);
       } else {
         // Query collection group if customer UID is not directly provided
         final query = await db
@@ -367,11 +415,39 @@ class FirestoreOrderRepository implements OrderRepository {
         }
       }
     } on FirebaseException catch (e) {
-      debugPrint('[ShopEase:OrderRepo] Error updating order status: ${e.code} - ${e.message}');
+      debugPrint(
+        '[ShopEase:OrderRepo] Error updating order status: ${e.code} - ${e.message}',
+      );
       throw 'Failed to update order status in Cloud Firestore (${e.code}): ${e.message ?? e.code}';
     } catch (e) {
       debugPrint('[ShopEase:OrderRepo] Error updating status: $e');
       throw 'An unexpected error occurred while updating the order status: $e';
+    }
+  }
+
+  @override
+  Future<String?> findCustomerUidForOrder(String orderId) async {
+    final db = _firestore;
+    if (db == null) {
+      return _fallbackRepo.findCustomerUidForOrder(orderId);
+    }
+    try {
+      final snap = await db
+          .collectionGroup('orders')
+          .where('id', isEqualTo: orderId)
+          .limit(1)
+          .get()
+          .timeout(_timeout);
+      if (snap.docs.isNotEmpty) {
+        final doc = snap.docs.first;
+        final data = doc.data();
+        final custId = data['customerId'] as String?;
+        if (custId != null && custId.isNotEmpty) return custId;
+        return doc.reference.parent.parent?.id;
+      }
+      return _fallbackRepo.findCustomerUidForOrder(orderId);
+    } catch (_) {
+      return _fallbackRepo.findCustomerUidForOrder(orderId);
     }
   }
 }

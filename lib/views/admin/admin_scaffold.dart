@@ -393,15 +393,26 @@ class AdminSidebar extends StatelessWidget {
               },
             ),
           )
-        : Container(
+        : AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOut,
             margin: const EdgeInsets.only(bottom: 4),
+            decoration: BoxDecoration(
+              color: isActive
+                  ? AppColors.luxuryWine.withAlpha(22)
+                  : Colors.transparent,
+              borderRadius: BorderRadius.circular(10),
+              border: isActive
+                  ? const Border(
+                      left: BorderSide(color: AppColors.luxuryWine, width: 3.5),
+                    )
+                  : null,
+            ),
             child: ListTile(
               dense: true,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10),
               ),
-              selected: isActive,
-              selectedTileColor: AppColors.luxuryWine.withAlpha(25),
               leading: Icon(
                 isActive ? activeIcon : icon,
                 color: isActive

@@ -97,6 +97,13 @@ class CartController extends ChangeNotifier {
   int get discountPercentage => (_discountRate * 100).round();
   String? get promoError => _promoError;
 
+  /// True if any item currently in the cart is out of stock.
+  bool get hasOutOfStockItems => _items.values.any((i) => !i.product.isInStock);
+
+  /// Items in the cart that are currently out of stock.
+  List<CartItem> get outOfStockItems =>
+      _items.values.where((i) => !i.product.isInStock).toList();
+
   /// Effective UID of the authenticated customer, falling back to Firebase Auth.
   String? get currentUserId {
     if (_currentUserId != null && _currentUserId!.isNotEmpty) {
@@ -229,7 +236,13 @@ class CartController extends ChangeNotifier {
   }
 
   /// Adds a product to the cart with specified size and quantity and persists to storage and Firestore.
-  void addItem(ProductModel product, {int quantity = 1, String? size}) {
+  /// Returns false if the product is out of stock.
+  bool addItem(ProductModel product, {int quantity = 1, String? size}) {
+    if (!product.isInStock) {
+      debugPrint('[ShopEase:Cart] Cannot add out-of-stock product "${product.name}" to cart.');
+      return false;
+    }
+
     final chosenSize = size ?? product.volume;
     final key = '${product.id}_$chosenSize';
 
@@ -259,6 +272,32 @@ class CartController extends ChangeNotifier {
       price: product.price,
       quantity: quantity,
     );
+    return true;
+  }
+
+  /// Synchronizes cart items with updated product stock and availability from the catalog.
+  void syncProductAvailability(List<ProductModel> currentProducts) {
+    bool changed = false;
+    final productMap = {for (final p in currentProducts) p.id: p};
+    for (final key in _items.keys) {
+      final item = _items[key]!;
+      if (productMap.containsKey(item.product.id)) {
+        final freshProduct = productMap[item.product.id]!;
+        if (freshProduct.isAvailable != item.product.isAvailable ||
+            freshProduct.stockQuantity != item.product.stockQuantity) {
+          _items[key] = CartItem(
+            product: freshProduct,
+            selectedSize: item.selectedSize,
+            quantity: item.quantity,
+          );
+          changed = true;
+        }
+      }
+    }
+    if (changed) {
+      notifyListeners();
+      _saveToLocalCache(_currentUserId);
+    }
   }
 
   /// Removes an item from the cart and deletes from storage and Firestore.

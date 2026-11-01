@@ -26,8 +26,14 @@ class _CartViewState extends State<CartView> {
 
   @override
   Widget build(BuildContext context) {
+    final homeController = context.watch<HomeController>();
     return Consumer<CartController>(
       builder: (context, cart, _) {
+        if (homeController.allProducts.isNotEmpty) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            cart.syncProductAvailability(homeController.allProducts);
+          });
+        }
         final items = cart.items;
 
         return Scaffold(
@@ -251,6 +257,30 @@ class _CartViewState extends State<CartView> {
                               color: AppColors.luxuryWine,
                             ),
                           ),
+                          if (!product.isInStock) ...[
+                            const SizedBox(height: 4),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFC62828).withAlpha(20),
+                                borderRadius: BorderRadius.circular(4),
+                                border: Border.all(
+                                  color: const Color(0xFFC62828).withAlpha(60),
+                                ),
+                              ),
+                              child: const Text(
+                                'Out of stock',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFFC62828),
+                                ),
+                              ),
+                            ),
+                          ],
                         ],
                       ),
                     ),
@@ -584,13 +614,54 @@ class _CartViewState extends State<CartView> {
 
                 const SizedBox(height: AppSpacing.md),
 
+                if (cart.hasOutOfStockItems) ...[
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
+                    margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFC62828).withAlpha(15),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: const Color(0xFFC62828).withAlpha(60),
+                      ),
+                    ),
+                    child: const Row(
+                      children: [
+                        Icon(
+                          Icons.info_outline_rounded,
+                          size: 18,
+                          color: Color(0xFFC62828),
+                        ),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Some items in your bag are out of stock. Please remove them to proceed.',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Color(0xFFC62828),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+
                 // Proceed to Checkout Button
                 ElevatedButton.icon(
-                  onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const CheckoutView()),
-                    );
-                  },
+                  onPressed: cart.hasOutOfStockItems
+                      ? null
+                      : () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const CheckoutView(),
+                            ),
+                          );
+                        },
                   icon: const Icon(Icons.lock_outline_rounded, size: 18),
                   label: const Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -609,6 +680,8 @@ class _CartViewState extends State<CartView> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.luxuryWine,
                     foregroundColor: AppColors.white,
+                    disabledBackgroundColor: AppColors.divider.withAlpha(160),
+                    disabledForegroundColor: AppColors.secondaryText,
                     minimumSize: const Size(double.infinity, 54),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
