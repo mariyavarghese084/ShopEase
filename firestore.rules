@@ -1,0 +1,126 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Helper functions ─────────────────────────────────────────────────────
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return isAuthenticated() && request.auth.uid == uid;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        exists(/databases/$(database)/documents/customers/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/customers/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // ── Customers collection (/customers/{uid}) ──────────────────────────────
+    match /customers/{uid} {
+      // 1. Customers can read their own profile, or verified administrators can read.
+      allow read: if isOwner(uid) || isAdmin();
+
+      // 3. Customers can create their profile document on registration.
+      //    Must match their authenticated UID and initial role must be 'customer'.
+      allow create: if isOwner(uid)
+                    && request.resource.data.uid == uid
+                    && request.resource.data.role == 'customer';
+
+      // 4. Customers can update only their own profile.
+      //    Users cannot change their role or grant themselves admin privileges.
+      allow update: if isOwner(uid)
+                    && request.resource.data.uid == uid
+                    && request.resource.data.role == resource.data.role;
+
+      // 5. Prevent direct client-side profile deletion.
+      allow delete: if false;
+
+      // ── Customer Favorites (/customers/{uid}/favorites/{productId}) ────────
+      match /favorites/{productId} {
+        // Authenticated customer can read, add, and remove their own favorites
+        allow read, write, delete: if isOwner(uid);
+      }
+
+      // ── Customer Cart Items (/customers/{uid}/cart/{cartKey}) ──────────────
+      match /cart/{cartKey} {
+        // Authenticated customer can read, update, and clear their own cart
+        allow read, write, delete: if isOwner(uid);
+      }
+
+      // ── Customer Orders (/customers/{uid}/orders/{orderId}) ────────────────
+      match /orders/{orderId} {
+        // Authenticated customer reads their own orders; verified admin reads all orders
+        allow read: if isOwner(uid) || isAdmin();
+
+        // Customer can place order matching their own UID
+        allow create: if isOwner(uid) && request.resource.data.customerId == uid;
+
+        // Privileged fulfillment status updates: ONLY verified administrators
+        // Customers cannot manipulate totals, items, paymentStatus, or fulfillmentStatus
+        allow update: if isAdmin();
+
+        // Direct deletion of placed orders is prevented for audit/history
+        allow delete: if false;
+      }
+
+      // ── Customer Device Registrations (/customers/{uid}/devices/{deviceId}) ──
+      match /devices/{deviceId} {
+        allow read, write: if isOwner(uid);
+      }
+
+      // ── Customer In-App Notifications (/customers/{uid}/notifications/{id}) ──
+      match /notifications/{notificationId} {
+        allow read, write: if isOwner(uid) || isAdmin();
+      }
+    }
+
+    // ── User devices & notifications backward-compatible paths (/users/{uid}) ─
+    match /users/{uid}/devices/{deviceId} {
+      allow read, write: if isOwner(uid);
+    }
+
+    match /users/{uid}/notifications/{notificationId} {
+      allow read, write: if isOwner(uid) || isAdmin();
+    }
+
+    // ── Root Notifications collection (/notifications/{notificationId}) ───────
+    // Public read for authenticated customers, administrative write for admins
+    match /notifications/{notificationId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // ── Backend Push Dispatch Requests (/notification_requests/{reqId}) ───────
+    // Authenticated users can queue valid order notifications or admin broadcasts;
+    // only admins or backend Admin SDK (which bypasses rules) can manage.
+    match /notification_requests/{requestId} {
+      allow create: if isAuthenticated() && (
+        isAdmin() ||
+        (request.resource.data.customerUid == request.auth.uid) ||
+        (request.resource.data.action in ['customer_order_confirmation', 'admin_new_order_alert'])
+      );
+      allow read, update, delete: if isAdmin();
+    }
+
+    // ── Collection Group: Orders across all customers ────────────────────────
+    // Allows verified administrators to query collectionGroup('orders').
+    match /{path=**}/orders/{orderId} {
+      allow read: if isAdmin() || (isAuthenticated() && resource.data.customerId == request.auth.uid);
+      allow update: if isAdmin();
+    }
+
+    // ── Products collection (public read, admin write) ────────────────────────
+    match /products/{productId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // ── Categories collection (public read, admin write) ──────────────────────
+    match /categories/{categoryId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+  }
+}

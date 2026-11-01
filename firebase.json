@@ -1,0 +1,44 @@
+{
+  "firestore": {
+    "rules": "firestore.rules"
+  },
+  "storage": {
+    "rules": "storage.rules"
+  },
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "default",
+      "ignore": [
+        "node_modules",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log",
+        "*.local"
+      ]
+    }
+  ],
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "shopease-59a47",
+          "appId": "1:1039678576985:android:cd4863d2422924e1cf1448",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "shopease-59a47",
+          "configurations": {
+            "android": "1:1039678576985:android:cd4863d2422924e1cf1448",
+            "ios": "1:1039678576985:ios:c5a1b91b838b9722cf1448",
+            "macos": "1:1039678576985:ios:c5a1b91b838b9722cf1448",
+            "web": "1:1039678576985:web:e475d87365cff37ecf1448",
+            "windows": "1:1039678576985:web:5438dc57425f4d3dcf1448"
+          }
+        }
+      }
+    }
+  }
+}

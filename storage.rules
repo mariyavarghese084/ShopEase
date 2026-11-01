@@ -1,0 +1,33 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // ── Helper functions ─────────────────────────────────────────────────────
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        firestore.exists(/databases/(default)/documents/customers/$(request.auth.uid)) &&
+        firestore.get(/databases/(default)/documents/customers/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // ── Product Images (/products/{productId}/{fileName}) ───────────────────
+    // Public read for customer catalogue; strict verified administrator write
+    match /products/{productId}/{fileName} {
+      // 1. All users and customers can view product images in the catalogue
+      allow read: if true;
+
+      // 2. Only verified administrators can upload or replace product images.
+      //    Enforces maximum size (5 MB) and standard image MIME types.
+      allow write: if isAdmin()
+                   && request.resource.size <= 5 * 1024 * 1024
+                   && request.resource.contentType.matches('image/.*');
+
+      // 3. Only verified administrators can delete product images.
+      allow delete: if isAdmin();
+    }
+  }
+}
+

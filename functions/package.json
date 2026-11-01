@@ -1,0 +1,27 @@
+{
+  "name": "shopease-functions",
+  "description": "Firebase Cloud Functions for ShopEase luxury cosmetics push notification dispatch",
+  "version": "1.0.0",
+  "engines": {
+    "node": ">=18"
+  },
+  "main": "index.js",
+  "scripts": {
+    "lint": "eslint .",
+    "serve": "firebase emulators:start --only functions",
+    "shell": "firebase functions:shell",
+    "start": "npm run shell",
+    "deploy": "firebase deploy --only functions",
+    "logs": "firebase functions:log",
+    "test": "node test/dispatch_test.js",
+    "worker": "node worker.js",
+    "test:worker": "node test/worker_test.js"
+  },
+  "dependencies": {
+    "firebase-admin": "^12.0.0",
+    "firebase-functions": "^5.0.0"
+  },
+  "devDependencies": {},
+  "private": true
+}
+

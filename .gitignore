@@ -1,0 +1,88 @@
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.build/
+.buildlog/
+.history
+.svn/
+.swiftpm/
+Thumbs.db
+migrate_working_dir/
+
+# Firebase debug logs
+firebase-debug.log
+firebase-debug.*.log
+firestore-debug.log
+ui-debug.log
+
+# IntelliJ / Android Studio / VS Code
+*.iml
+*.ipr
+*.iws
+.idea/
+.vscode/
+
+# Flutter/Dart/Pub related
+**/doc/api/
+**/ios/Flutter/.last_build_id
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+/build/
+**/build/
+/coverage/
+**/coverage/
+
+# Android & iOS Binaries
+*.apk
+*.aab
+*.app
+*.ipa
+/android/app/debug/
+/android/app/profile/
+/android/app/release/
+**/android/app/debug/
+**/android/app/profile/
+**/android/app/release/
+
+# Node.js (Functions)
+node_modules/
+**/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Secrets, Environment Configuration & Private Keys
+*.env
+*.env.*
+.env
+.env.*
+*service-account*.json
+*serviceAccount*.json
+*credentials*.json
+key.properties
+*.jks
+*.keystore
+private_key*.pem
+*.pem
+*.p12
+
+# Data exports and sensitive backups
+*export*.csv
+*export*.json
+*dump*.json
+*backup*
+*.csv
+
+# Symbolication related
+app.*.symbols
+
+# Obfuscation related
+app.*.map.json

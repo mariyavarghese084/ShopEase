@@ -1,0 +1,60 @@
+name: ShopEase FCM Notification Dispatcher
+
+on:
+  # Allows triggering the worker manually from the GitHub Actions tab
+  workflow_dispatch:
+    inputs:
+      limit:
+        description: 'Maximum queued notification requests to process per run'
+        required: false
+        default: '50'
+      dry_run:
+        description: 'Dry run mode (validate without claiming or sending)'
+        type: boolean
+        required: false
+        default: false
+
+  # Conservative scheduled execution (every 5 minutes, GitHub Actions minimum cron interval)
+  schedule:
+    - cron: '*/5 * * * *'
+
+# Prevent overlapping worker executions across scheduled/manual runs
+concurrency:
+  group: fcm-notification-dispatcher
+  cancel-in-progress: false
+
+# Restrict default permissions to minimum required (least privilege)
+permissions:
+  contents: read
+
+jobs:
+  dispatch-notifications:
+    name: Process Queued Push Notifications
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    defaults:
+      run:
+        working-directory: functions
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: functions/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci --omit=dev || npm install --omit=dev
+
+      - name: Run FCM Notification Worker
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID || 'shopease-59a47' }}
+          BATCH_LIMIT: ${{ github.event.inputs.limit || '50' }}
+          DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
+        run: node worker.js
