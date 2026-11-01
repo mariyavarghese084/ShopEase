@@ -48,6 +48,12 @@ jobs:
           cache: 'npm'
           cache-dependency-path: functions/package-lock.json
 
+      - name: Log Trigger Mode
+        run: |
+          echo "Workflow triggered by: ${{ github.event_name }}"
+          echo "Dry run mode: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.dry_run == true }}"
+          echo "Batch limit: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.limit || '50' }}"
+
       - name: Install dependencies
         run: npm ci --omit=dev || npm install --omit=dev
 
@@ -55,6 +61,6 @@ jobs:
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
           FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID || 'shopease-59a47' }}
-          BATCH_LIMIT: ${{ github.event.inputs.limit || '50' }}
-          DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
+          BATCH_LIMIT: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.limit || '50' }}
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.dry_run == true }}
         run: node worker.js
