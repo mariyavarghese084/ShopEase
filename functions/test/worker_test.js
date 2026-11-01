@@ -15,6 +15,8 @@
 
 const assert = require("assert");
 const {
+  sanitizeCredentialString,
+  validateAndNormalizeServiceAccount,
   parseServiceAccount,
   buildFcmMulticastMessage,
   extractFcmResults,
@@ -30,11 +32,11 @@ async function runWorkerTests() {
   console.log("  Running ShopEase Standalone FCM Worker Complete Test Suite");
   console.log("==================================================================\n");
 
-  // ── Test 1: Service Account Parsing ──────────────────────────────────────────
+  // ── Test 1: Service Account Parsing & Sanitization ───────────────────────────
   {
-    console.log("Test 1: Service Account credential parsing and decoding...");
+    console.log("Test 1: Service Account credential parsing, sanitization, and decoding...");
 
-    // Raw JSON string
+    // 1A: Standard raw JSON string
     const sampleSa = {
       type: "service_account",
       project_id: "shopease-59a47",
@@ -45,22 +47,71 @@ async function runWorkerTests() {
     assert.strictEqual(parsedRaw.project_id, "shopease-59a47");
     assert.strictEqual(parsedRaw.client_email, sampleSa.client_email);
 
-    // Base64-encoded JSON string
+    // 1B: Base64-encoded JSON string
     const base64Sa = Buffer.from(JSON.stringify(sampleSa)).toString("base64");
     const parsedBase64 = parseServiceAccount(base64Sa);
     assert.strictEqual(parsedBase64.project_id, "shopease-59a47");
     assert.strictEqual(parsedBase64.client_email, sampleSa.client_email);
 
-    // Null or undefined
+    // 1C: Base64-encoded JSON with internal newlines / spaces (e.g. wrapped lines)
+    const base64WithNewlines = base64Sa.substring(0, 40) + "\r\n  " + base64Sa.substring(40);
+    const parsedB64Wrapped = parseServiceAccount(base64WithNewlines);
+    assert.strictEqual(parsedB64Wrapped.project_id, "shopease-59a47");
+
+    // 1D: UTF-8 Byte Order Mark (BOM \uFEFF) prefixed JSON (common when copying from PowerShell/Windows)
+    const bomJson = "\uFEFF" + JSON.stringify(sampleSa);
+    const parsedBom = parseServiceAccount(bomJson);
+    assert.strictEqual(parsedBom.project_id, "shopease-59a47");
+
+    // 1E: JSON wrapped in single or double quotes
+    const singleQuoted = `'${JSON.stringify(sampleSa)}'`;
+    const parsedSingle = parseServiceAccount(singleQuoted);
+    assert.strictEqual(parsedSingle.project_id, "shopease-59a47");
+
+    // 1F: Markdown code fence block (```json ... ```)
+    const markdownWrapped = "```json\n" + JSON.stringify(sampleSa, null, 2) + "\n```";
+    const parsedMarkdown = parseServiceAccount(markdownWrapped);
+    assert.strictEqual(parsedMarkdown.project_id, "shopease-59a47");
+
+    // 1G: Private key with escaped newlines (\\n) normalized to real newlines (\n)
+    const saWithEscapedNewlines = {
+      ...sampleSa,
+      private_key: "-----BEGIN PRIVATE KEY-----\\nLINE1\\nLINE2\\n-----END PRIVATE KEY-----\\n",
+    };
+    const parsedEscaped = parseServiceAccount(JSON.stringify(saWithEscapedNewlines));
+    assert.strictEqual(
+      parsedEscaped.private_key,
+      "-----BEGIN PRIVATE KEY-----\nLINE1\nLINE2\n-----END PRIVATE KEY-----\n"
+    );
+
+    // 1H: Missing required field validation (without printing values)
+    const incompleteSa = {
+      project_id: "shopease-59a47",
+      // Missing private_key and client_email
+    };
+    assert.throws(() => {
+      parseServiceAccount(JSON.stringify(incompleteSa));
+    }, /missing required fields: \[private_key, client_email\]/);
+
+    // 1I: Project ID mismatch verification
+    const wrongProjectSa = {
+      ...sampleSa,
+      project_id: "wrong-project-999",
+    };
+    assert.throws(() => {
+      parseServiceAccount(JSON.stringify(wrongProjectSa));
+    }, /project_id mismatch: expected 'shopease-59a47'/);
+
+    // 1J: Null, undefined, empty string handling
     assert.strictEqual(parseServiceAccount(null), null);
     assert.strictEqual(parseServiceAccount(""), null);
 
-    // Invalid JSON string
+    // 1K: Invalid non-JSON string
     assert.throws(() => {
-      parseServiceAccount("{invalid_json");
-    }, /FIREBASE_SERVICE_ACCOUNT is invalid JSON/);
+      parseServiceAccount("not_a_valid_json_or_base64_payload");
+    }, /FIREBASE_SERVICE_ACCOUNT was provided but could not be parsed/);
 
-    console.log("  ✓ Test 1 Passed: Raw and Base64 service accounts parsed securely without leaks.\n");
+    console.log("  ✓ Test 1 Passed: Robust parsing verified for Raw JSON, Base64, BOM, Quotes, Markdown, Escaped Keys, and Validation.\n");
   }
 
   // ── Test 2: Outgoing FCM Multicast Payload ──────────────────────────────────

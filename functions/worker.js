@@ -21,63 +21,192 @@ const admin = require("firebase-admin");
  *
  * NEVER prints or leaks the private key or secret contents.
  */
-function parseServiceAccount(rawEnv) {
+/**
+ * Strips whitespace, Byte Order Marks (BOM), outer wrapping quotes,
+ * and markdown code fence syntax commonly introduced when copying secrets.
+ */
+function sanitizeCredentialString(rawEnv) {
+  if (!rawEnv || typeof rawEnv !== "string") {
+    return "";
+  }
+  let s = rawEnv.trim();
+
+  // 1. Strip UTF-8 Byte Order Mark (BOM) if present (common in Windows clipboard/PowerShell)
+  if (s.charCodeAt(0) === 0xfeff) {
+    s = s.slice(1).trim();
+  }
+
+  // 2. Strip Markdown code fences if secret contains ```json ... ```
+  if (s.startsWith("```")) {
+    s = s.replace(/^```[a-zA-Z0-9_-]*\r?\n?/, "").replace(/\r?\n?```$/, "").trim();
+  }
+
+  // 3. Strip outer single or double quotes wrapping the entire JSON or base64 string
+  if (
+    (s.startsWith('"') && s.endsWith('"') && s.length >= 2) ||
+    (s.startsWith("'") && s.endsWith("'") && s.length >= 2)
+  ) {
+    s = s.slice(1, -1).trim();
+  }
+
+  return s;
+}
+
+/**
+ * Validates required service account fields and normalizes escaped private key newlines.
+ * Does NOT print any sensitive values or keys.
+ */
+function validateAndNormalizeServiceAccount(parsed, expectedProjectId = "shopease-59a47") {
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    throw new Error("Service account credential is not a valid JSON object.");
+  }
+
+  // Check required fields without printing secret values
+  const missing = [];
+  if (!parsed.project_id || typeof parsed.project_id !== "string" || !parsed.project_id.trim()) {
+    missing.push("project_id");
+  }
+  if (!parsed.private_key || typeof parsed.private_key !== "string" || !parsed.private_key.trim()) {
+    missing.push("private_key");
+  }
+  if (!parsed.client_email || typeof parsed.client_email !== "string" || !parsed.client_email.trim()) {
+    missing.push("client_email");
+  }
+
+  if (missing.length > 0) {
+    throw new Error(
+      `Service account credential is missing required fields: [${missing.join(", ")}].`
+    );
+  }
+
+  // Verify project_id matches the target Firebase project
+  const targetProject = (expectedProjectId || "shopease-59a47").trim();
+  if (parsed.project_id.trim() !== targetProject) {
+    throw new Error(
+      `Service account project_id mismatch: expected '${targetProject}', but credential is for another project.`
+    );
+  }
+
+  // Normalize private key: ensure escaped newlines (\n) are converted to real newlines
+  if (typeof parsed.private_key === "string" && parsed.private_key.includes("\\n")) {
+    parsed.private_key = parsed.private_key.replace(/\\n/g, "\n");
+  }
+
+  return parsed;
+}
+
+/**
+ * Safely parses the service account from environment variables.
+ * Accepts:
+ * - Raw JSON string (standard, multiline, or single-line)
+ * - Base64-encoded JSON string (with or without wrapping whitespace)
+ * - Quoted or markdown-wrapped JSON string
+ * - Path to a local JSON file (for local development/testing)
+ *
+ * NEVER prints or leaks the private key or secret contents.
+ */
+function parseServiceAccount(rawEnv, expectedProjectId = "shopease-59a47") {
   if (!rawEnv || typeof rawEnv !== "string") {
     return null;
   }
-  const trimmed = rawEnv.trim();
-  if (!trimmed) {
+
+  const s = sanitizeCredentialString(rawEnv);
+  if (!s) {
     return null;
   }
 
-  // 1. Raw JSON
-  if (trimmed.startsWith("{")) {
-    try {
-      return JSON.parse(trimmed);
-    } catch (e) {
-      throw new Error(`FIREBASE_SERVICE_ACCOUNT is invalid JSON: ${e.message}`);
-    }
-  }
+  let parsed = null;
 
-  // 2. Base64-encoded JSON
+  // Strategy 1: Direct JSON parse
   try {
-    const decoded = Buffer.from(trimmed, "base64").toString("utf8");
-    if (decoded.trim().startsWith("{")) {
-      return JSON.parse(decoded);
+    const res = JSON.parse(s);
+    if (res && typeof res === "object") {
+      parsed = res;
+    } else if (typeof res === "string") {
+      // Handles double-stringified JSON (e.g. JSON in a quoted string)
+      const inner = JSON.parse(res.trim());
+      if (inner && typeof inner === "object") {
+        parsed = inner;
+      }
     }
   } catch (_) {}
 
-  // 3. Local file path
-  if (fs.existsSync(trimmed)) {
-    try {
-      const fileContent = fs.readFileSync(trimmed, "utf8");
-      return JSON.parse(fileContent);
-    } catch (e) {
-      throw new Error(`Failed to read service account file from ${trimmed}: ${e.message}`);
+  // Strategy 2: Extract JSON object bounded by outermost { and }
+  if (!parsed) {
+    const firstBrace = s.indexOf("{");
+    const lastBrace = s.lastIndexOf("}");
+    if (firstBrace !== -1 && lastBrace > firstBrace) {
+      try {
+        const candidate = s.slice(firstBrace, lastBrace + 1);
+        const res = JSON.parse(candidate);
+        if (res && typeof res === "object") {
+          parsed = res;
+        }
+      } catch (_) {}
     }
   }
 
-  throw new Error(
-    "FIREBASE_SERVICE_ACCOUNT was provided but could not be parsed as raw JSON, base64-encoded JSON, or a valid file path."
-  );
+  // Strategy 3: Base64-encoded JSON
+  if (!parsed) {
+    try {
+      const cleanB64 = s.replace(/[\r\n\t\s]/g, "");
+      const decoded = Buffer.from(cleanB64, "base64").toString("utf8").trim();
+      const cleanDecoded = sanitizeCredentialString(decoded);
+
+      try {
+        const res = JSON.parse(cleanDecoded);
+        if (res && typeof res === "object") {
+          parsed = res;
+        }
+      } catch (_) {
+        const firstBrace = cleanDecoded.indexOf("{");
+        const lastBrace = cleanDecoded.lastIndexOf("}");
+        if (firstBrace !== -1 && lastBrace > firstBrace) {
+          const res = JSON.parse(cleanDecoded.slice(firstBrace, lastBrace + 1));
+          if (res && typeof res === "object") {
+            parsed = res;
+          }
+        }
+      }
+    } catch (_) {}
+  }
+
+  // Strategy 4: Local file path
+  if (!parsed && fs.existsSync(s)) {
+    try {
+      const fileContent = fs.readFileSync(s, "utf8");
+      parsed = parseServiceAccount(fileContent, expectedProjectId);
+      return parsed;
+    } catch (e) {
+      throw new Error(`Failed to read service account file from path: ${e.message}`);
+    }
+  }
+
+  if (!parsed) {
+    throw new Error(
+      "FIREBASE_SERVICE_ACCOUNT was provided but could not be parsed as raw JSON, base64-encoded JSON, or a valid file path."
+    );
+  }
+
+  return validateAndNormalizeServiceAccount(parsed, expectedProjectId);
 }
 
 /**
  * Initializes Firebase Admin SDK with credentials.
  */
 function initFirebase({ serviceAccount, projectId } = {}) {
-  const sa =
-    serviceAccount ||
-    parseServiceAccount(
-      process.env.FIREBASE_SERVICE_ACCOUNT || process.env.FIREBASE_SERVICE_ACCOUNT_KEY
-    );
-
   const targetProjectId =
     projectId ||
-    (sa && sa.project_id) ||
     process.env.FIREBASE_PROJECT_ID ||
     process.env.GCLOUD_PROJECT ||
     "shopease-59a47";
+
+  const sa =
+    serviceAccount ||
+    parseServiceAccount(
+      process.env.FIREBASE_SERVICE_ACCOUNT || process.env.FIREBASE_SERVICE_ACCOUNT_KEY,
+      targetProjectId
+    );
 
   let app;
   if (admin.apps.length > 0) {
@@ -90,7 +219,7 @@ function initFirebase({ serviceAccount, projectId } = {}) {
     if (sa) {
       appOptions.credential = admin.credential.cert(sa);
       const maskedEmail = sa.client_email
-        ? `${sa.client_email.split("@")[0]}@${(sa.client_email.split("@")[1] || "").substring(0, 8)}...`
+        ? `${sa.client_email.split("@")[0].substring(0, 4)}***@${(sa.client_email.split("@")[1] || "").substring(0, 8)}...`
         : "configured";
       console.log(`[ShopEase:Worker] Authenticated via Service Account: ${maskedEmail}`);
     } else if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
@@ -835,6 +964,8 @@ async function processQueuedRequests({ db, messaging, limit = 50, dryRun = false
 
 // Module exports for CLI and testing
 module.exports = {
+  sanitizeCredentialString,
+  validateAndNormalizeServiceAccount,
   parseServiceAccount,
   initFirebase,
   buildFcmMulticastMessage,
