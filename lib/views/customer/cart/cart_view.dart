@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../../controllers/cart_controller.dart';
 import '../../../controllers/home_controller.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../widgets/luxury_ui_components.dart';
 import '../checkout/checkout_view.dart';
 
 /// Shopping Bag view inspired by the AÈRA reference UI screen ('Shporta').
@@ -90,17 +91,26 @@ class _CartViewState extends State<CartView> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Container(
-              width: 120,
-              height: 120,
-              decoration: BoxDecoration(
-                color: AppColors.luxuryWine.withAlpha(20),
-                shape: BoxShape.circle,
+            TweenAnimationBuilder<double>(
+              tween: Tween<double>(begin: 0.8, end: 1.0),
+              duration: const Duration(milliseconds: 600),
+              curve: Curves.easeOutBack,
+              builder: (context, scale, child) => Transform.scale(
+                scale: scale,
+                child: child,
               ),
-              child: const Icon(
-                Icons.shopping_bag_outlined,
-                size: 56,
-                color: AppColors.luxuryWine,
+              child: Container(
+                width: 120,
+                height: 120,
+                decoration: BoxDecoration(
+                  color: AppColors.luxuryWine.withAlpha(20),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.shopping_bag_outlined,
+                  size: 56,
+                  color: AppColors.luxuryWine,
+                ),
               ),
             ),
             const SizedBox(height: AppSpacing.lg),
@@ -160,8 +170,10 @@ class _CartViewState extends State<CartView> {
               final item = cart.items[index];
               final product = item.product;
 
-              return Container(
-                padding: const EdgeInsets.all(AppSpacing.sm + 2),
+              return StaggeredSlideFade(
+                index: index,
+                child: Container(
+                  padding: const EdgeInsets.all(AppSpacing.sm + 2),
                 decoration: BoxDecoration(
                   color: AppColors.cardBackground,
                   borderRadius: BorderRadius.circular(16),
@@ -192,32 +204,42 @@ class _CartViewState extends State<CartView> {
                       child: product.imageUrl != null
                           ? ClipRRect(
                               borderRadius: BorderRadius.circular(12),
-                              child: product.imageUrl!.startsWith('http://') ||
-                                      product.imageUrl!.startsWith('https://')
-                                  ? Image.network(
-                                      product.imageUrl!,
+                              child: Builder(
+                                builder: (context) {
+                                  final imgUrl = product.imageUrl!
+                                      .replaceAll(r'\', '/')
+                                      .trim();
+                                  if (imgUrl.startsWith('http://') ||
+                                      imgUrl.startsWith('https://')) {
+                                    return Image.network(
+                                      imgUrl,
                                       width: 68,
                                       height: 68,
                                       fit: BoxFit.cover,
-                                      errorBuilder: (context, error, stackTrace) =>
-                                          Icon(
+                                      errorBuilder:
+                                          (context, error, stackTrace) =>
+                                              Icon(
                                         product.visualIcon,
                                         color: AppColors.white,
                                         size: 32,
                                       ),
-                                    )
-                                  : Image.asset(
-                                      product.imageUrl!,
-                                      width: 68,
-                                      height: 68,
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (context, error, stackTrace) =>
-                                          Icon(
-                                        product.visualIcon,
-                                        color: AppColors.white,
-                                        size: 32,
-                                      ),
+                                    );
+                                  }
+                                  return Image.asset(
+                                    imgUrl,
+                                    width: 68,
+                                    height: 68,
+                                    fit: BoxFit.cover,
+                                    errorBuilder:
+                                        (context, error, stackTrace) =>
+                                            Icon(
+                                      product.visualIcon,
+                                      color: AppColors.white,
+                                      size: 32,
                                     ),
+                                  );
+                                },
+                              ),
                             )
                           : Icon(
                               product.visualIcon,
@@ -315,11 +337,17 @@ class _CartViewState extends State<CartView> {
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 6,
                                 ),
-                                child: Text(
-                                  '${item.quantity}',
-                                  style: const TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.bold,
+                                child: AnimatedSwitcher(
+                                  duration: const Duration(milliseconds: 200),
+                                  transitionBuilder: (child, animation) =>
+                                      ScaleTransition(scale: animation, child: child),
+                                  child: Text(
+                                    '${item.quantity}',
+                                    key: ValueKey<int>(item.quantity),
+                                    style: const TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -357,6 +385,7 @@ class _CartViewState extends State<CartView> {
                     ),
                   ],
                 ),
+              ),
               );
             },
           ),
@@ -535,8 +564,10 @@ class _CartViewState extends State<CartView> {
                         color: AppColors.secondaryText,
                       ),
                     ),
-                    Text(
-                      '₹${cart.subtotal.toStringAsFixed(2)}',
+                    LuxuryAnimatedCounter(
+                      value: cart.subtotal,
+                      prefix: '₹',
+                      decimalPlaces: 2,
                       style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
@@ -601,8 +632,10 @@ class _CartViewState extends State<CartView> {
                         color: AppColors.mainText,
                       ),
                     ),
-                    Text(
-                      '₹${cart.totalPrice.toStringAsFixed(2)}',
+                    LuxuryAnimatedCounter(
+                      value: cart.totalPrice,
+                      prefix: '₹',
+                      decimalPlaces: 2,
                       style: const TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.w800,

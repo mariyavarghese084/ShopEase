@@ -3,7 +3,7 @@ import '../core/constants/app_constants.dart';
 import '../models/product_model.dart';
 
 /// Reusable luxury fragrance product card inspired by the AÈRA reference UI.
-class ProductCard extends StatelessWidget {
+class ProductCard extends StatefulWidget {
   final ProductModel product;
   final bool isFavorite;
   final VoidCallback? onFavoriteToggle;
@@ -22,305 +22,7 @@ class ProductCard extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.cardBackground,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.divider.withAlpha(140), width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF2C2224).withAlpha(10),
-            blurRadius: 14,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(20),
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: onTap,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // ── Top Image Container & Badges ──────────────────────────────
-              Expanded(
-                flex: 11,
-                child: Stack(
-                  children: [
-              // Ambient luxury backdrop with floral / soft gradient
-                    Container(
-                      width: double.infinity,
-                      height: double.infinity,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            (product.secondaryColor ?? product.visualColor).withAlpha(35),
-                            AppColors.background,
-                          ],
-                        ),
-                      ),
-                      child: Center(
-                        child: Hero(
-                          tag: heroTag ?? 'product_img_${product.id}',
-                          child: product.imageUrl != null
-                              ? ClipRRect(
-                                  borderRadius: BorderRadius.circular(12),
-                                  child: product.imageUrl!.startsWith('http://') ||
-                                          product.imageUrl!.startsWith('https://')
-                                      ? Image.network(
-                                          product.imageUrl!,
-                                          width: 90,
-                                          height: 90,
-                                          fit: BoxFit.cover,
-                                          errorBuilder: (context, error, stackTrace) =>
-                                              _buildIconFallback(product),
-                                        )
-                                      : Image.asset(
-                                          product.imageUrl!,
-                                          width: 90,
-                                          height: 90,
-                                          fit: BoxFit.cover,
-                                          errorBuilder: (context, error, stackTrace) =>
-                                              _buildIconFallback(product),
-                                        ),
-                                )
-                              : _buildIconFallback(product),
-                        ),
-                      ),
-                    ),
-
-                    // Stock or Tag Badge
-                    if (!product.isInStock)
-                      Positioned(
-                        top: 10,
-                        left: 10,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 3,
-                          ),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF6B585B),
-                            borderRadius: BorderRadius.circular(6),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withAlpha(40),
-                                blurRadius: 4,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: const Text(
-                            'Out of Stock',
-                            style: TextStyle(
-                              fontSize: 9,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.white,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                        ),
-                      )
-                    else if (product.tag != null)
-                      Positioned(
-                        top: 10,
-                        left: 10,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 3,
-                          ),
-                          decoration: BoxDecoration(
-                            color: product.tag == 'Sale'
-                                ? const Color(0xFFC8A87D)
-                                : AppColors.luxuryWine,
-                            borderRadius: BorderRadius.circular(6),
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppColors.luxuryWine.withAlpha(40),
-                                blurRadius: 4,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: Text(
-                            product.hasDiscount
-                                ? '-${product.discountPercentage}%'
-                                : (product.tag ?? ''),
-                            style: const TextStyle(
-                              fontSize: 9,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.white,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                        ),
-                      ),
-
-                    // Favorite Button
-                    Positioned(
-                      top: 4,
-                      right: 4,
-                      child: Material(
-                        color: Colors.transparent,
-                        child: IconButton(
-                          iconSize: 20,
-                          splashRadius: 20,
-                          icon: Icon(
-                            isFavorite
-                                ? Icons.favorite_rounded
-                                : Icons.favorite_outline_rounded,
-                            color: isFavorite
-                                ? AppColors.luxuryWine
-                                : AppColors.secondaryText.withAlpha(180),
-                          ),
-                          onPressed: onFavoriteToggle,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // ── Product Details Section ───────────────────────────────────
-              Expanded(
-                flex: 9,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Brand / Subtitle & Rating
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  product.brand.isNotEmpty
-                                      ? '${product.brand.toUpperCase()} • ${product.subtitle}'
-                                      : product.subtitle,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                    fontSize: 8.5,
-                                    fontWeight: FontWeight.w600,
-                                    color: AppColors.champagneGold,
-                                    letterSpacing: 0.6,
-                                  ),
-                                ),
-                              ),
-                              Row(
-                                children: [
-                                  const Icon(
-                                    Icons.star_rounded,
-                                    size: 12,
-                                    color: Color(0xFFFFB300),
-                                  ),
-                                  const SizedBox(width: 2),
-                                  Text(
-                                    product.rating.toStringAsFixed(1),
-                                    style: const TextStyle(
-                                      fontSize: 9.5,
-                                      fontWeight: FontWeight.w700,
-                                      color: AppColors.mainText,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 2),
-
-                          // Product Name
-                          Text(
-                            product.name,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.mainText,
-                              letterSpacing: -0.2,
-                            ),
-                          ),
-                        ],
-                      ),
-
-                      // Price & Quick Add Button
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                '₹${product.price.toStringAsFixed(0)}',
-                                style: const TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w800,
-                                  color: AppColors.luxuryWine,
-                                ),
-                              ),
-                              if (product.hasDiscount)
-                                Text(
-                                  '₹${product.originalPrice!.toStringAsFixed(0)}',
-                                  style: const TextStyle(
-                                    fontSize: 9.5,
-                                    decoration: TextDecoration.lineThrough,
-                                    color: AppColors.secondaryText,
-                                  ),
-                                ),
-                            ],
-                          ),
-
-                          // Circular Quick Add to cart button
-                          Material(
-                            color: product.isInStock
-                                ? AppColors.luxuryWine
-                                : AppColors.divider.withAlpha(160),
-                            shape: const CircleBorder(),
-                            elevation: product.isInStock ? 1 : 0,
-                            shadowColor: AppColors.luxuryWine.withAlpha(80),
-                            child: InkWell(
-                              onTap: product.isInStock ? onAddToCart : null,
-                              customBorder: const CircleBorder(),
-                              child: Padding(
-                                padding: const EdgeInsets.all(6),
-                                child: Icon(
-                                  product.isInStock
-                                      ? Icons.shopping_bag_outlined
-                                      : Icons.remove_shopping_cart_outlined,
-                                  size: 14,
-                                  color: product.isInStock
-                                      ? AppColors.white
-                                      : AppColors.secondaryText,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+  State<ProductCard> createState() => _ProductCardState();
 
   /// Fallback icon+gradient display shown when [product.imageUrl] is null
   /// or when the asset image fails to load.
@@ -332,10 +34,7 @@ class ProductCard extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            product.visualColor.withAlpha(80),
-            product.visualColor,
-          ],
+          colors: [product.visualColor.withAlpha(80), product.visualColor],
         ),
         shape: BoxShape.circle,
         boxShadow: [
@@ -349,11 +48,7 @@ class ProductCard extends StatelessWidget {
       child: Stack(
         alignment: Alignment.center,
         children: [
-          Icon(
-            product.visualIcon,
-            size: 38,
-            color: AppColors.white,
-          ),
+          Icon(product.visualIcon, size: 38, color: AppColors.white),
           Positioned(
             bottom: 10,
             child: Container(
@@ -373,6 +68,385 @@ class ProductCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _ProductCardState extends State<ProductCard> {
+  bool _isHovered = false;
+  bool _isAddPressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final product = widget.product;
+    final isFavorite = widget.isFavorite;
+
+    return MouseRegion(
+      cursor: widget.onTap != null
+          ? SystemMouseCursors.click
+          : SystemMouseCursors.basic,
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOut,
+        transform: Matrix4.translationValues(0, _isHovered ? -2.5 : 0, 0),
+        decoration: BoxDecoration(
+          color: AppColors.cardBackground,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: _isHovered
+                ? AppColors.champagneGold.withAlpha(180)
+                : AppColors.divider.withAlpha(140),
+            width: _isHovered ? 1.2 : 1.0,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: _isHovered
+                  ? AppColors.luxuryWine.withAlpha(22)
+                  : const Color(0xFF2C2224).withAlpha(10),
+              blurRadius: _isHovered ? 16 : 14,
+              offset: Offset(0, _isHovered ? 6 : 4),
+            ),
+          ],
+        ),
+        child: Material(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(20),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: widget.onTap,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // ── Top Image Container & Badges ──────────────────────────────
+                Expanded(
+                  flex: 11,
+                  child: Stack(
+                    children: [
+                      // Ambient luxury backdrop with floral / soft gradient
+                      Container(
+                        width: double.infinity,
+                        height: double.infinity,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              product.visualColor.withAlpha(20),
+                              const Color(0xFFF9F5F3),
+                            ],
+                          ),
+                        ),
+                        child: Center(
+                          child: Hero(
+                            tag: widget.heroTag ?? 'product_img_${product.id}',
+                            child: (product.imageUrl != null &&
+                                    product.imageUrl!.trim().isNotEmpty)
+                                ? ClipRRect(
+                                    borderRadius: BorderRadius.circular(12),
+                                    child: Builder(
+                                      builder: (context) {
+                                        final sanitizedUrl = product.imageUrl!
+                                            .replaceAll(r'\', '/')
+                                            .trim();
+                                        if (sanitizedUrl.startsWith('http://') ||
+                                            sanitizedUrl.startsWith('https://')) {
+                                          return Image.network(
+                                            sanitizedUrl,
+                                            width: 90,
+                                            height: 90,
+                                            fit: BoxFit.cover,
+                                            errorBuilder:
+                                                (context, error, stackTrace) =>
+                                                    ProductCard._buildIconFallback(
+                                                      product,
+                                                    ),
+                                          );
+                                        }
+                                        return Image.asset(
+                                          sanitizedUrl,
+                                          width: 90,
+                                          height: 90,
+                                          fit: BoxFit.cover,
+                                          errorBuilder:
+                                              (context, error, stackTrace) =>
+                                                  ProductCard._buildIconFallback(
+                                                    product,
+                                                  ),
+                                        );
+                                      },
+                                    ),
+                                  )
+                                : ProductCard._buildIconFallback(product),
+                          ),
+                        ),
+                      ),
+
+                      // Stock or Tag Badge
+                      if (!product.isInStock)
+                        Positioned(
+                          top: 10,
+                          left: 10,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF6B585B),
+                              borderRadius: BorderRadius.circular(6),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withAlpha(40),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: const Text(
+                              'Out of Stock',
+                              style: TextStyle(
+                                fontSize: 9,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.white,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ),
+                        )
+                      else if (product.tag != null || product.hasDiscount)
+                        Positioned(
+                          top: 10,
+                          left: 10,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: product.tag == 'Sale'
+                                  ? const Color(0xFFC8A87D)
+                                  : AppColors.luxuryWine,
+                              borderRadius: BorderRadius.circular(6),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppColors.luxuryWine.withAlpha(40),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: Text(
+                              (product.hasDiscount && product.originalPrice != null)
+                                  ? '-${product.discountPercentage}%'
+                                  : (product.tag ?? ''),
+                              style: const TextStyle(
+                                fontSize: 9,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.white,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ),
+                        ),
+
+                      // Favorite Button with bounce feedback
+                      Positioned(
+                        top: 4,
+                        right: 4,
+                        child: Material(
+                          color: Colors.transparent,
+                          child: IconButton(
+                            iconSize: 20,
+                            splashRadius: 20,
+                            icon: TweenAnimationBuilder<double>(
+                              tween: Tween<double>(
+                                begin: 1.0,
+                                end: isFavorite ? 1.2 : 1.0,
+                              ),
+                              duration: const Duration(milliseconds: 220),
+                              curve: Curves.easeOutBack,
+                              builder: (context, scale, child) {
+                                return Transform.scale(
+                                  scale: scale,
+                                  child: Icon(
+                                    isFavorite
+                                        ? Icons.favorite_rounded
+                                        : Icons.favorite_outline_rounded,
+                                    color: isFavorite
+                                        ? AppColors.luxuryWine
+                                        : AppColors.secondaryText.withAlpha(
+                                            180,
+                                          ),
+                                  ),
+                                );
+                              },
+                            ),
+                            onPressed: widget.onFavoriteToggle,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // ── Product Details Section ───────────────────────────────────
+                Expanded(
+                  flex: 9,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 5,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Brand / Subtitle & Rating
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    product.brand.isNotEmpty
+                                        ? '${product.brand.toUpperCase()} • ${product.subtitle}'
+                                        : product.subtitle,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      fontSize: 8.5,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.champagneGold,
+                                      letterSpacing: 0.6,
+                                    ),
+                                  ),
+                                ),
+                                Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.star_rounded,
+                                      size: 12,
+                                      color: Color(0xFFFFB300),
+                                    ),
+                                    const SizedBox(width: 2),
+                                    Text(
+                                      product.rating.toStringAsFixed(1),
+                                      style: const TextStyle(
+                                        fontSize: 9.5,
+                                        fontWeight: FontWeight.w700,
+                                        color: AppColors.mainText,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 2),
+
+                            // Product Name
+                            Text(
+                              product.name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.mainText,
+                                letterSpacing: -0.2,
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        // Price & Quick Add Button
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  '₹${product.price.toStringAsFixed(0)}',
+                                  style: const TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w800,
+                                    color: AppColors.luxuryWine,
+                                  ),
+                                ),
+                                if (product.hasDiscount && product.originalPrice != null)
+                                  Text(
+                                    '₹${product.originalPrice!.toStringAsFixed(0)}',
+                                    style: const TextStyle(
+                                      fontSize: 9.5,
+                                      decoration: TextDecoration.lineThrough,
+                                      color: AppColors.secondaryText,
+                                    ),
+                                  ),
+                              ],
+                            ),
+
+                            // Circular Quick Add to cart button with animated scale
+                            AnimatedScale(
+                              scale: _isAddPressed ? 0.88 : 1.0,
+                              duration: const Duration(milliseconds: 140),
+                              curve: Curves.easeOutCubic,
+                              child: Material(
+                                color: product.isInStock
+                                    ? AppColors.luxuryWine
+                                    : AppColors.divider.withAlpha(160),
+                                shape: const CircleBorder(),
+                                elevation: product.isInStock ? 1 : 0,
+                                shadowColor: AppColors.luxuryWine.withAlpha(80),
+                                child: InkWell(
+                                  onTap: product.isInStock
+                                      ? () {
+                                          setState(() => _isAddPressed = true);
+                                          Future.delayed(
+                                            const Duration(milliseconds: 150),
+                                            () {
+                                              if (mounted) {
+                                                setState(
+                                                  () => _isAddPressed = false,
+                                                );
+                                              }
+                                            },
+                                          );
+                                          widget.onAddToCart?.call();
+                                        }
+                                      : null,
+                                  customBorder: const CircleBorder(),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(6),
+                                    child: Icon(
+                                      product.isInStock
+                                          ? Icons.shopping_bag_outlined
+                                          : Icons.remove_shopping_cart_outlined,
+                                      size: 14,
+                                      color: product.isInStock
+                                          ? AppColors.white
+                                          : AppColors.secondaryText,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

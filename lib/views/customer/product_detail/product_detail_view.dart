@@ -32,6 +32,7 @@ class ProductDetailView extends StatefulWidget {
 class _ProductDetailViewState extends State<ProductDetailView> {
   late String _selectedSize;
   int _quantity = 1;
+  bool _isAdding = false;
 
   @override
   void initState() {
@@ -98,6 +99,8 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                         iconColor: isFav
                             ? AppColors.luxuryWine
                             : AppColors.mainText,
+                        isAnimated: true,
+                        isActive: isFav,
                         onTap: () => homeController.toggleFavorite(product.id),
                       ),
                       const SizedBox(width: AppSpacing.sm),
@@ -186,20 +189,30 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                                   ),
                                   child: ClipRRect(
                                     borderRadius: BorderRadius.circular(24),
-                                    child: product.imageUrl!.startsWith('http://') ||
-                                            product.imageUrl!.startsWith('https://')
-                                        ? Image.network(
-                                            product.imageUrl!,
+                                    child: Builder(
+                                      builder: (context) {
+                                        final imgUrl = product.imageUrl!
+                                            .replaceAll(r'\', '/')
+                                            .trim();
+                                        if (imgUrl.startsWith('http://') ||
+                                            imgUrl.startsWith('https://')) {
+                                          return Image.network(
+                                            imgUrl,
                                             fit: BoxFit.cover,
-                                            errorBuilder: (context, error, stackTrace) =>
-                                                _buildBottleFallback(product),
-                                          )
-                                        : Image.asset(
-                                            product.imageUrl!,
-                                            fit: BoxFit.cover,
-                                            errorBuilder: (context, error, stackTrace) =>
-                                                _buildBottleFallback(product),
-                                          ),
+                                            errorBuilder:
+                                                (context, error, stackTrace) =>
+                                                    _buildBottleFallback(product),
+                                          );
+                                        }
+                                        return Image.asset(
+                                          imgUrl,
+                                          fit: BoxFit.cover,
+                                          errorBuilder:
+                                              (context, error, stackTrace) =>
+                                                  _buildBottleFallback(product),
+                                        );
+                                      },
+                                    ),
                                   ),
                                 )
                               else
@@ -455,14 +468,20 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: AppSpacing.sm,
                                 ),
-                                child: Text(
-                                  '$_quantity',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                    color: product.isInStock
-                                        ? AppColors.mainText
-                                        : AppColors.secondaryText,
+                                child: AnimatedSwitcher(
+                                  duration: const Duration(milliseconds: 200),
+                                  transitionBuilder: (child, animation) =>
+                                      ScaleTransition(scale: animation, child: child),
+                                  child: Text(
+                                    '$_quantity',
+                                    key: ValueKey<int>(_quantity),
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: product.isInStock
+                                          ? AppColors.mainText
+                                          : AppColors.secondaryText,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -533,8 +552,9 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                     // Large "Add to Bag" button
                     Expanded(
                       child: ElevatedButton.icon(
-                        onPressed: product.isInStock
-                            ? () {
+                        onPressed: (product.isInStock && !_isAdding)
+                            ? () async {
+                                setState(() => _isAdding = true);
                                 cartController.addItem(
                                   product,
                                   quantity: _quantity,
@@ -587,16 +607,29 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                                     ),
                                   ),
                                 );
+                                await Future.delayed(const Duration(milliseconds: 300));
+                                if (mounted) setState(() => _isAdding = false);
                               }
                             : null,
-                        icon: Icon(
-                          product.isInStock
-                              ? Icons.shopping_bag_outlined
-                              : Icons.remove_shopping_cart_outlined,
-                          size: 20,
-                        ),
+                        icon: _isAdding
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.white),
+                                ),
+                              )
+                            : Icon(
+                                product.isInStock
+                                    ? Icons.shopping_bag_outlined
+                                    : Icons.remove_shopping_cart_outlined,
+                                size: 20,
+                              ),
                         label: Text(
-                          product.isInStock ? 'Add to Bag' : 'Out of Stock',
+                          _isAdding
+                              ? 'Adding...'
+                              : (product.isInStock ? 'Add to Bag' : 'Out of Stock'),
                           style: const TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.bold,
@@ -633,6 +666,8 @@ class _ProductDetailViewState extends State<ProductDetailView> {
     required IconData icon,
     required VoidCallback onTap,
     Color iconColor = AppColors.mainText,
+    bool isAnimated = false,
+    bool isActive = false,
   }) {
     return Material(
       color: AppColors.cardBackground,
@@ -644,7 +679,19 @@ class _ProductDetailViewState extends State<ProductDetailView> {
         customBorder: const CircleBorder(),
         child: Padding(
           padding: const EdgeInsets.all(10),
-          child: Icon(icon, size: 18, color: iconColor),
+          child: isAnimated
+              ? TweenAnimationBuilder<double>(
+                  key: ValueKey<bool>(isActive),
+                  tween: Tween<double>(begin: 0.75, end: 1.0),
+                  duration: const Duration(milliseconds: 260),
+                  curve: Curves.easeOutBack,
+                  builder: (context, scale, child) => Transform.scale(
+                    scale: scale,
+                    child: child,
+                  ),
+                  child: Icon(icon, size: 18, color: iconColor),
+                )
+              : Icon(icon, size: 18, color: iconColor),
         ),
       ),
     );

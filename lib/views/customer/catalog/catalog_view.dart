@@ -1,8 +1,11 @@
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../controllers/cart_controller.dart';
 import '../../../controllers/home_controller.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../core/routes/app_routes.dart';
+import '../../../widgets/luxury_ui_components.dart';
 import '../../../widgets/product_card.dart';
 import '../product_detail/product_detail_view.dart';
 
@@ -220,74 +223,91 @@ class _CatalogViewState extends State<CatalogView> {
                       )
                     : products.isEmpty
                         ? _buildEmptyState(home)
-                        : GridView.builder(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: AppSpacing.md,
-                              vertical: AppSpacing.sm,
-                            ),
-                            physics: const BouncingScrollPhysics(),
-                            gridDelegate:
-                                const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 2,
-                              childAspectRatio: 0.65,
-                              crossAxisSpacing: AppSpacing.md,
-                              mainAxisSpacing: AppSpacing.md,
-                            ),
-                            itemCount: products.length,
-                            itemBuilder: (context, index) {
-                              final product = products[index];
+                        : LayoutBuilder(
+                            builder: (context, constraints) {
+                              final width = constraints.maxWidth;
+                              final int crossAxisCount = width < 600 ? 2 : (width < 960 ? 3 : 4);
 
-                              return ProductCard(
-                                product: product,
-                                heroTag: 'catalog_grid_${product.id}',
-                                isFavorite: home.isFavorite(product.id),
-                                onFavoriteToggle: () {
-                                  home.toggleFavorite(product.id);
-                                },
-                                onAddToCart: () {
-                                  cart.addItem(product, quantity: 1);
-                                  ScaffoldMessenger.of(context).clearSnackBars();
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Row(
-                                        children: [
-                                          const Icon(
-                                            Icons.check_circle_rounded,
-                                            color: AppColors.white,
-                                            size: 18,
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Expanded(
-                                            child: Text(
-                                              'Added to bag: "${product.name}"',
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                              style: const TextStyle(fontWeight: FontWeight.w600),
+                              return GridView.builder(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: AppSpacing.md,
+                                  vertical: AppSpacing.sm,
+                                ),
+                                physics: const BouncingScrollPhysics(),
+                                gridDelegate:
+                                    SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: crossAxisCount,
+                                  childAspectRatio: 0.65,
+                                  crossAxisSpacing: AppSpacing.md,
+                                  mainAxisSpacing: AppSpacing.md,
+                                ),
+                                itemCount: products.length,
+                                itemBuilder: (context, index) {
+                                  final product = products[index];
+
+                                  return StaggeredSlideFade(
+                                    index: index,
+                                    child: ProductCard(
+                                      product: product,
+                                      heroTag: 'catalog_grid_${product.id}',
+                                      isFavorite: home.isFavorite(product.id),
+                                      onFavoriteToggle: () {
+                                        home.toggleFavorite(product.id);
+                                      },
+                                      onAddToCart: () {
+                                        cart.addItem(product, quantity: 1);
+                                        ScaffoldMessenger.of(context).clearSnackBars();
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(
+                                            content: Row(
+                                              children: [
+                                                const Icon(
+                                                  Icons.check_circle_rounded,
+                                                  color: AppColors.white,
+                                                  size: 18,
+                                                ),
+                                                const SizedBox(width: 8),
+                                                Expanded(
+                                                  child: Text(
+                                                    'Added to bag: "${product.name}"',
+                                                    maxLines: 1,
+                                                    overflow: TextOverflow.ellipsis,
+                                                    style: const TextStyle(fontWeight: FontWeight.w600),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            backgroundColor: AppColors.luxuryWine,
+                                            behavior: SnackBarBehavior.floating,
+                                            duration: const Duration(milliseconds: 1400),
+                                            action: SnackBarAction(
+                                              label: 'VIEW BAG',
+                                              textColor: AppColors.champagneGold,
+                                              onPressed: () {
+                                                ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                                                if (widget.showBackButton) {
+                                                  Navigator.of(context).pushNamed(AppRoutes.cart);
+                                                } else {
+                                                  home.setBottomNavIndex(2);
+                                                }
+                                              },
+                                            ),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius: BorderRadius.circular(AppRadius.md),
                                             ),
                                           ),
-                                        ],
-                                      ),
-                                      backgroundColor: AppColors.luxuryWine,
-                                      behavior: SnackBarBehavior.floating,
-                                      duration: const Duration(milliseconds: 1400),
-                                      action: SnackBarAction(
-                                        label: 'CLOSE',
-                                        textColor: AppColors.champagneGold,
-                                        onPressed: () => ScaffoldMessenger.of(context).hideCurrentSnackBar(),
-                                      ),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(AppRadius.md),
-                                      ),
-                                    ),
-                                  );
-                                },
-                                onTap: () {
-                                  Navigator.of(context).push(
-                                    MaterialPageRoute(
-                                      builder: (_) => ProductDetailView(
-                                        product: product,
-                                        heroTag: 'catalog_grid_${product.id}',
-                                      ),
+                                        );
+                                      },
+                                      onTap: () {
+                                        Navigator.of(context).push(
+                                          MaterialPageRoute(
+                                            builder: (_) => ProductDetailView(
+                                              product: product,
+                                              heroTag: 'catalog_grid_${product.id}',
+                                            ),
+                                          ),
+                                        );
+                                      },
                                     ),
                                   );
                                 },

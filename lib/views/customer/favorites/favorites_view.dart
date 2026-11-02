@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../../controllers/cart_controller.dart';
 import '../../../controllers/home_controller.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../widgets/luxury_ui_components.dart';
 import '../../../widgets/product_card.dart';
 import '../product_detail/product_detail_view.dart';
 
@@ -114,45 +115,55 @@ class _FavoritesViewState extends State<FavoritesView> {
               Expanded(
                 child: filteredFavorites.isEmpty
                     ? _buildEmptyFavorites(context, home)
-                    : GridView.builder(
-                        padding: const EdgeInsets.all(AppSpacing.md),
-                        physics: const BouncingScrollPhysics(),
-                        gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          childAspectRatio: 0.70,
-                          crossAxisSpacing: AppSpacing.md,
-                          mainAxisSpacing: AppSpacing.md,
-                        ),
-                        itemCount: filteredFavorites.length,
-                        itemBuilder: (context, index) {
-                          final product = filteredFavorites[index];
+                    : LayoutBuilder(
+                        builder: (context, constraints) {
+                          final width = constraints.maxWidth;
+                          final int crossAxisCount = width < 600 ? 2 : (width < 960 ? 3 : 4);
 
-                          return ProductCard(
-                            product: product,
-                            heroTag: 'fav_grid_${product.id}',
-                            isFavorite: true,
-                            onFavoriteToggle: () {
-                              home.toggleFavorite(product.id);
-                            },
-                            onAddToCart: () {
-                              cart.addItem(product);
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('Added to bag: ${product.name}'),
-                                  backgroundColor: AppColors.luxuryWine,
-                                  duration: const Duration(seconds: 1),
-                                ),
-                              );
-                            },
-                            onTap: () {
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (_) =>
-                                      ProductDetailView(
-                                        product: product,
-                                        heroTag: 'fav_grid_${product.id}',
+                          return GridView.builder(
+                            padding: const EdgeInsets.all(AppSpacing.md),
+                            physics: const BouncingScrollPhysics(),
+                            gridDelegate:
+                                SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: crossAxisCount,
+                              childAspectRatio: 0.70,
+                              crossAxisSpacing: AppSpacing.md,
+                              mainAxisSpacing: AppSpacing.md,
+                            ),
+                            itemCount: filteredFavorites.length,
+                            itemBuilder: (context, index) {
+                              final product = filteredFavorites[index];
+
+                              return StaggeredSlideFade(
+                                index: index,
+                                child: ProductCard(
+                                  product: product,
+                                  heroTag: 'fav_grid_${product.id}',
+                                  isFavorite: true,
+                                  onFavoriteToggle: () {
+                                    home.toggleFavorite(product.id);
+                                  },
+                                  onAddToCart: () {
+                                    cart.addItem(product);
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text('Added to bag: ${product.name}'),
+                                        backgroundColor: AppColors.luxuryWine,
+                                        duration: const Duration(seconds: 1),
                                       ),
+                                    );
+                                  },
+                                  onTap: () {
+                                    Navigator.of(context).push(
+                                      MaterialPageRoute(
+                                        builder: (_) =>
+                                            ProductDetailView(
+                                              product: product,
+                                              heroTag: 'fav_grid_${product.id}',
+                                            ),
+                                      ),
+                                    );
+                                  },
                                 ),
                               );
                             },

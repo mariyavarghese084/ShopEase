@@ -166,7 +166,7 @@ class ProductModel {
           (map['inStock'] as bool?) ??
           true,
       tag: map['tag'] as String?,
-      imageUrl: map['imageUrl'] as String?,
+      imageUrl: (map['imageUrl'] as String?)?.replaceAll(r'\', '/'),
       subtitle: map['subtitle'] as String? ?? 'LUXURY COSMETICS',
       volume: map['volume'] as String? ?? 'Full Size',
       availableSizes: (map['availableSizes'] as List<dynamic>?)

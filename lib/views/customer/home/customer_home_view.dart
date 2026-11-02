@@ -27,6 +27,8 @@ class CustomerHomeView extends StatefulWidget {
 class _CustomerHomeViewState extends State<CustomerHomeView> {
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  final PageController _bannerPageController = PageController();
+  int _currentBannerIndex = 0;
 
   @override
   void initState() {
@@ -45,6 +47,7 @@ class _CustomerHomeViewState extends State<CustomerHomeView> {
   void dispose() {
     _searchController.dispose();
     _scrollController.dispose();
+    _bannerPageController.dispose();
     super.dispose();
   }
 
@@ -605,6 +608,89 @@ class _CustomerHomeViewState extends State<CustomerHomeView> {
 
   /// Promotional Hero Banner matching the top-left screen in the reference UI.
   Widget _buildPromoBanner(HomeController controller) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SizedBox(
+          height: 220,
+          child: PageView(
+            controller: _bannerPageController,
+            onPageChanged: (index) {
+              setState(() => _currentBannerIndex = index);
+            },
+            children: [
+              _buildBannerSlide(
+                controller: controller,
+                title: 'Luxury Cosmetics',
+                subtitle: 'Reveal Your Natural\nBeauty',
+                tagline: 'BEAUTY IN EVERY DETAIL',
+                buttonText: 'ORDER NOW',
+                imagePath:
+                    'Assest/The Viral Blush Beauty Lovers Are Obsessed With.jpeg',
+                accentColor: const Color(0xFFE898A8),
+              ),
+              _buildBannerSlide(
+                controller: controller,
+                title: 'Artisanal Essence',
+                subtitle: 'Rare Fragrances &\nPure Botanicals',
+                tagline: 'AÈRA SIGNATURE SELECTION',
+                buttonText: 'EXPLORE',
+                imagePath: 'Assest/AÈRA Signature.jpeg',
+                accentColor: const Color(0xFFC8A87D),
+              ),
+              _buildBannerSlide(
+                controller: controller,
+                title: 'Summer Glow',
+                subtitle: 'Hydrating Elixirs &\nRadiant Serums',
+                tagline: 'LIMITED EDITION COLLECTION',
+                buttonText: 'DISCOVER',
+                imagePath: 'Assest/Yara Lattafa.jpeg',
+                accentColor: const Color(0xFF9E6573),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(3, (index) {
+            final isSelected = _currentBannerIndex == index;
+            return GestureDetector(
+              onTap: () {
+                _bannerPageController.animateToPage(
+                  index,
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
+                );
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                margin: const EdgeInsets.symmetric(horizontal: 3),
+                width: isSelected ? 18 : 6,
+                height: 6,
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? AppColors.luxuryWine
+                      : AppColors.champagneGold.withAlpha(90),
+                  borderRadius: BorderRadius.circular(3),
+                ),
+              ),
+            );
+          }),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBannerSlide({
+    required HomeController controller,
+    required String title,
+    required String subtitle,
+    required String tagline,
+    required String buttonText,
+    required String imagePath,
+    required Color accentColor,
+  }) {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
@@ -645,12 +731,17 @@ class _CustomerHomeViewState extends State<CustomerHomeView> {
               children: [
                 Expanded(
                   flex: 6,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Luxury Cosmetics',
-                        style: TextStyle(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                      Text(
+                        title,
+                        style: const TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.w800,
                           color: AppColors.mainText,
@@ -658,9 +749,9 @@ class _CustomerHomeViewState extends State<CustomerHomeView> {
                         ),
                       ),
                       const SizedBox(height: 4),
-                      const Text(
-                        'Reveal Your Natural\nBeauty',
-                        style: TextStyle(
+                      Text(
+                        subtitle,
+                        style: const TextStyle(
                           fontSize: 18,
                           fontStyle: FontStyle.italic,
                           color: AppColors.luxuryWine,
@@ -669,8 +760,8 @@ class _CustomerHomeViewState extends State<CustomerHomeView> {
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        'BEAUTY IN EVERY DETAIL',
-                        style: TextStyle(
+                        tagline,
+                        style: const TextStyle(
                           fontSize: 9,
                           fontWeight: FontWeight.w700,
                           color: AppColors.champagneGold,
@@ -688,7 +779,8 @@ class _CustomerHomeViewState extends State<CustomerHomeView> {
                               MaterialPageRoute(
                                 builder: (_) => ProductDetailView(
                                   product: topProduct,
-                                  heroTag: 'home_banner_${topProduct.id}',
+                                  heroTag:
+                                      'home_banner_${topProduct.id}_$buttonText',
                                 ),
                               ),
                             );
@@ -710,23 +802,24 @@ class _CustomerHomeViewState extends State<CustomerHomeView> {
                           elevation: 2,
                           shadowColor: AppColors.luxuryWine.withAlpha(80),
                         ),
-                        child: const Row(
+                        child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Text(
-                              'ORDER NOW',
-                              style: TextStyle(
+                              buttonText,
+                              style: const TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.bold,
                                 letterSpacing: 0.5,
                               ),
                             ),
-                            SizedBox(width: 4),
-                            Icon(Icons.arrow_forward_rounded, size: 14),
+                            const SizedBox(width: 4),
+                            const Icon(Icons.arrow_forward_rounded, size: 14),
                           ],
                         ),
                       ),
                     ],
+                  ),
                   ),
                 ),
 
@@ -738,10 +831,10 @@ class _CustomerHomeViewState extends State<CustomerHomeView> {
                       width: 88,
                       height: 120,
                       decoration: BoxDecoration(
-                        gradient: const LinearGradient(
+                        gradient: LinearGradient(
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,
-                          colors: [Color(0xFFE898A8), Color(0xFF8A4652)],
+                          colors: [accentColor, AppColors.luxuryWine],
                         ),
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: [
@@ -755,7 +848,7 @@ class _CustomerHomeViewState extends State<CustomerHomeView> {
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(16),
                         child: Image.asset(
-                          'Assest/The Viral Blush Beauty Lovers Are Obsessed With.jpeg',
+                          imagePath,
                           fit: BoxFit.cover,
                           errorBuilder: (context, error, stackTrace) =>
                               _buildPromoBottleFallback(),
@@ -1051,7 +1144,6 @@ class _CustomerHomeViewState extends State<CustomerHomeView> {
               const SizedBox(height: AppSpacing.md),
               OutlinedButton(
                 onPressed: () {
-                  _searchController.clear();
                   controller.clearSearch();
                   controller.selectCategory('all');
                 },
@@ -1086,55 +1178,57 @@ class _CustomerHomeViewState extends State<CustomerHomeView> {
                 isFavorite: controller.isFavorite(product.id),
                 onFavoriteToggle: () => controller.toggleFavorite(product.id),
                 onAddToCart: () {
-                cart.addItem(product, quantity: 1);
-                ScaffoldMessenger.of(context).clearSnackBars();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Row(
-                      children: [
-                        const Icon(
-                          Icons.check_circle_rounded,
-                          color: AppColors.white,
-                          size: 18,
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            'Added to bag: "${product.name}"',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(fontWeight: FontWeight.w600),
+                  cart.addItem(product, quantity: 1);
+                  ScaffoldMessenger.of(context).clearSnackBars();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Row(
+                        children: [
+                          const Icon(
+                            Icons.check_circle_rounded,
+                            color: AppColors.white,
+                            size: 18,
                           ),
-                        ),
-                      ],
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Added to bag: "${product.name}"',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      backgroundColor: AppColors.luxuryWine,
+                      behavior: SnackBarBehavior.floating,
+                      duration: const Duration(milliseconds: 1400),
+                      action: SnackBarAction(
+                        label: 'CLOSE',
+                        textColor: AppColors.champagneGold,
+                        onPressed: () =>
+                            ScaffoldMessenger.of(context).hideCurrentSnackBar(),
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppRadius.md),
+                      ),
                     ),
-                    backgroundColor: AppColors.luxuryWine,
-                    behavior: SnackBarBehavior.floating,
-                    duration: const Duration(milliseconds: 1400),
-                    action: SnackBarAction(
-                      label: 'CLOSE',
-                      textColor: AppColors.champagneGold,
-                      onPressed: () =>
-                          ScaffoldMessenger.of(context).hideCurrentSnackBar(),
+                  );
+                },
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => ProductDetailView(
+                        product: product,
+                        heroTag: 'home_grid_${product.id}',
+                      ),
                     ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppRadius.md),
-                    ),
-                  ),
-                );
-              },
-              onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => ProductDetailView(
-                      product: product,
-                      heroTag: 'home_grid_${product.id}',
-                    ),
-                  ),
-                );
-              },
-            ),
-          );
+                  );
+                },
+              ),
+            );
           }, childCount: controller.displayedProducts.length),
         );
       },

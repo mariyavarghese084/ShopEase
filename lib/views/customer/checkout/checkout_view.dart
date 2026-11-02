@@ -102,7 +102,14 @@ class _CheckoutViewState extends State<CheckoutView> {
                         decoration: BoxDecoration(
                           color: AppColors.cardBackground,
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: AppColors.divider),
+                          border: Border.all(color: AppColors.champagneGold.withAlpha(50)),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.mainText.withAlpha(8),
+                              blurRadius: 10,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
                         ),
                         child: Column(
                           children: [
@@ -178,7 +185,14 @@ class _CheckoutViewState extends State<CheckoutView> {
                         decoration: BoxDecoration(
                           color: AppColors.cardBackground,
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: AppColors.divider),
+                          border: Border.all(color: AppColors.champagneGold.withAlpha(50)),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.mainText.withAlpha(8),
+                              blurRadius: 10,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
                         ),
                         child: Column(
                           children: [
@@ -217,7 +231,14 @@ class _CheckoutViewState extends State<CheckoutView> {
                         decoration: BoxDecoration(
                           color: AppColors.cardBackground,
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: AppColors.divider),
+                          border: Border.all(color: AppColors.champagneGold.withAlpha(50)),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.mainText.withAlpha(8),
+                              blurRadius: 10,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
                         ),
                         child: Column(
                           children: [
@@ -305,7 +326,14 @@ class _CheckoutViewState extends State<CheckoutView> {
                         decoration: BoxDecoration(
                           color: AppColors.cardBackground,
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: AppColors.divider),
+                          border: Border.all(color: AppColors.champagneGold.withAlpha(50)),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.mainText.withAlpha(8),
+                              blurRadius: 10,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
                         ),
                         child: Column(
                           children: [
@@ -459,6 +487,7 @@ class _CheckoutViewState extends State<CheckoutView> {
                     minimumSize: const Size(double.infinity, 54),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
+                      side: const BorderSide(color: AppColors.champagneGold, width: 0.8),
                     ),
                     elevation: 2,
                     shadowColor: AppColors.luxuryWine.withAlpha(80),
